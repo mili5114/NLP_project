@@ -1,0 +1,55 @@
+{
+  "code_commit": "d607f56c9cfe9e8632ebaf65dcaf2b4b7fe1c6f8",
+  "model": {
+    "repository": "Qwen/Qwen3.5-4B",
+    "revision": "851bf6e806efd8d0a36b00ddf55e13ccb7b8cd0a",
+    "dtype": "bfloat16",
+    "enable_thinking": false,
+    "seed": 4051,
+    "eos_token_ids": [
+      248044,
+      248046
+    ]
+  },
+  "backend_options": {
+    "transformers": {
+      "class": "Qwen3_5ForConditionalGeneration",
+      "attn_implementation": "sdpa",
+      "do_sample": false
+    },
+    "vllm": {
+      "generation_config": "vllm",
+      "temperature": 0,
+      "extra_body": {
+        "chat_template_kwargs": {
+          "enable_thinking": false
+        },
+        "stop_token_ids": [
+          248044,
+          248046
+        ]
+      }
+    }
+  },
+  "limits": {
+    "interaction_turns": 12,
+    "tokens_per_interaction": 384,
+    "final_answer_tokens": 128,
+    "total_generated_tokens": 3072,
+    "context_tokens": 16384,
+    "tool_attempts_per_action": 4,
+    "tool_attempts_per_task": 32,
+    "task_seconds": 180,
+    "action_seconds": 15,
+    "feedback_characters": 2000
+  },
+  "stop_text": "End Action",
+  "truncation_marker": "\n[Output Truncated]",
+  "initial_contract": "\n\nCourse execution contract: In each Action block, invoke at most 4 of the listed tools. All listed tool invocations count, including calls nested inside expressions or loops. Python variables persist across Action blocks. Split longer computations across blocks and print needed observations. If a tool limit is exceeded, that call is not executed; earlier effects and assignments remain. Use only the documented tools and ordinary Python computation. Do not inspect tool internals or read source/data files. The first Answer ends the task. You will not receive answer-correctness feedback. The episode allows at most 12 interaction turns and 32 listed-tool attempts. One additional final-answer-only turn is reserved after the interaction budget; no tools execute during that final turn.",
+  "final_answer_request": "The interaction budget is exhausted. No further tools can be executed. Submit your final answer now using the observations already available, in the format Answer: your answer.",
+  "full_trace_format": {
+    "prefix": "Tool execution trace (actual calls, in execution order):\n",
+    "event": "[{index}] {tool} args={args_repr} kwargs={kwargs_repr} [{execution_status}] -> {result_or_error}",
+    "python_separator": "\nPython output:\n"
+  }
+}

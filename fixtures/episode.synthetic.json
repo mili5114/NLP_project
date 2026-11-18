@@ -1,0 +1,19 @@
+{
+  "schema_version": "1.0",
+  "synthetic": true,
+  "run_id": "fixture-only",
+  "task_id": "synthetic/example_numeric",
+  "split": "SYNTHETIC",
+  "condition": "C",
+  "status": "finished",
+  "termination_reason": "first_parseable_answer",
+  "final_answer": "42",
+  "input_tokens": 100,
+  "output_tokens": 20,
+  "model_calls": 2,
+  "tool_attempts_executed": 1,
+  "tool_attempts_blocked": 0,
+  "wall_seconds": 1.0,
+  "trajectory_path": null,
+  "config_sha256": null
+}

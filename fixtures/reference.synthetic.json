@@ -1,0 +1,6 @@
+{
+  "synthetic": true,
+  "offline_only": true,
+  "references": [{"task_id": "synthetic/example_numeric", "answer_type": "numeric", "reference": "42", "expected_success": true}],
+  "note": "Only synthetic labels; never pass reference or expected_success into runtime or feedback"
+}

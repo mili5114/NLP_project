@@ -1,0 +1,106 @@
+CodeAct Assignment Attachment
+
+1. Code and Model
+
+Repository: https://github.com/xingyaoww/code-act
+Commit: d607f56c9cfe9e8632ebaf65dcaf2b4b7fe1c6f8
+Use scripts/eval/m3tooleval with code_as_action enabled.
+
+Model: Qwen/Qwen3.5-4B
+Revision: 851bf6e806efd8d0a36b00ddf55e13ccb7b8cd0a
+Use BF16, greedy decoding, non-thinking mode, and seed 4051.
+
+Choose either of the following setups. Use the same inference framework and version for all experiments within your group, and record dependency versions.
+
+Option 1: Local inference with Transformers
+In a Python 3.10 environment, install:
+pip install torch==2.10.0 transformers==5.17.0 tokenizers==0.23.2 accelerate==1.15.0 ipython==8.37.0 numpy==2.2.6
+Load the model with Qwen3_5ForConditionalGeneration. Use the revision above for both the model and tokenizer, and set do_sample=False.
+
+Option 2: Local serving with vLLM
+Use a vLLM environment that supports Qwen3.5-4B. Start the model with vllm serve, specifying the model and tokenizer revision above, --dtype bfloat16, --max-model-len 16384, --seed 4051, and --generation-config vllm.
+Adapt the repository's model calls to the local OpenAI-compatible API. Set temperature=0 and pass chat_template_kwargs={"enable_thinking": false} and stop_token_ids=[248044, 248046] through extra_body. Set max_tokens according to the remaining budget for each turn, and set stop to End Action.
+Serving and API guide: https://docs.vllm.ai/en/latest/serving/online_serving/openai_compatible_server/
+
+Both setups disable thinking, use EOS IDs 248044 and 248046, and stop generation at End Action. Framework options are listed under backend_options in runtime_settings.json. Read the two JSON files from your experiment program.
+
+2. Run Limits
+
+Allow up to 12 interaction turns per task, plus one final-answer turn. Generate at most 384 tokens per interaction turn and 128 in the final turn, with a total output limit of 3072 tokens and a context limit of 16384. Reserve 128 tokens for the final answer during interaction turns.
+
+Allow at most 4 tool-call attempts per code block and 32 per task, including calls inside loops and nested expressions. Do not execute calls beyond the limit; retain earlier effects. Move to the final-answer turn when the tool budget is exhausted. Limit each task to 180 seconds and each code block to 15 seconds. End the task when the time or context limit is reached.
+
+Limit feedback to 2000 characters per turn, including the truncation marker. Prompts, the Full Trace format, and settings are in runtime_settings.json. Append initial_contract to the official task prompt and use final_answer_request for the final-answer turn.
+
+3. Repository Adaptations
+
+• Change the prompt signature of find_flights to find_flights(from_location, to_location, date). Change the parameter names of reverse_string and string_length to s to match the functions.
+• Create a fresh interpreter and web tools for each task and condition. Preserve variables across turns within a task.
+• Parse outputs with Task.parse_generation. End the task at the first parseable Answer; do not prompt retries based on answer correctness.
+• Use reference answers only for offline scoring. Task initialization prints the answer; keep this log and task definitions containing answers out of model inputs and the code execution environment.
+• For Official Output, retain the output processing in Task.execute_action. For Full Trace, show each tool, its arguments, and its result or exception in call order, followed by the original interpreter output.
+
+4. Evaluation and Records
+
+This section replaces the assignment's requirements for evaluation metrics and run records.
+
+The 43 tasks are split into 16 DEV tasks and 27 EVAL tasks. Use DEV for method design and tuning, then run EVAL after fixing the configuration. Use the same tasks, model, tools, and budgets across conditions.
+
+Compare numeric answers using Decimal, requiring finite values and an absolute error of at most 1e-6. For strings, strip leading and trailing whitespace and use exact matching. Include all tasks in the success-rate denominator; tasks without a final answer count as incorrect.
+
+Compare task success rate and mean input and output tokens per task across conditions. Sum tokens over all model calls within each task, then average over all tasks, including failures. Use ablations and paired interaction records to analyze the feedback strategy, reporting model or tool call counts where useful.
+
+Submit per-task results and interaction logs with the code, including model and tool calls, generated code, tool returns, model-visible feedback, and final answers. See the assignment for the report format, grading weights, and course resource budget. If the assignment and this attachment differ, follow this attachment.
+
+5. Task List
+
+The entries below are official Task.name values. Your program can read them from split_manifest.json.
+
+DEV (16 tasks)
+
+message_decoder/specific_decoded_character
+message_decoder/maximum_value_decoding
+trade_calculator/interstellar_trade_transaction
+travel_itinerary_planning/cheapest_new_york_trip
+travel_itinerary_planning/new_york_trip_with_specific_preferences
+travel_itinerary_planning/multi_city_business_trip
+web_browsing/email_of_allison_hill
+web_browsing/price_of_legendary_wand
+message_decoder/multi_step_decoding_challenge
+trade_calculator/bulk_trade_quantity_discount
+trade_calculator/optimizing_bulk_purchase_discounts
+travel_itinerary_planning/adventure_trip
+web_browsing/expertise_of_allison_hill
+web_browsing/total_price_of_selected_items_0
+web_browsing/people_in_sales
+web_browsing/price_of_legendary_potion
+
+EVAL (27 tasks)
+
+message_decoder/length_based_decoding_puzzle
+message_decoder/shortest_caesar_decoded_message
+trade_calculator/comparative_profit_analysis
+trade_calculator/currency_fluctuation_hedging
+trade_calculator/optimal_trade_route_multiple_commodities
+trade_calculator/taxed_commodity_export
+trade_calculator/variable_tariff_profit_maximization
+travel_itinerary_planning/budget_trip_to_paris
+travel_itinerary_planning/grand_tour_vacation
+travel_itinerary_planning/last_minute_tokyo_trip
+travel_itinerary_planning/leisure_and_business_combo
+travel_itinerary_planning/leisure_multi_city_trip
+travel_itinerary_planning/london_business_trip
+travel_itinerary_planning/luxury_tokyo_trip
+travel_itinerary_planning/new_york_holiday_season
+travel_itinerary_planning/three_city_european_tour
+web_browsing/email_of_henry_santiago
+web_browsing/email_of_kimberly_dudley
+web_browsing/email_of_meredith_barnes
+web_browsing/expertise_of_henry_santiago
+web_browsing/expertise_of_kimberly_dudley
+web_browsing/expertise_of_meredith_barnes
+web_browsing/price_of_legendary_crystal_ball
+web_browsing/price_of_legendary_spellbook
+web_browsing/total_price_of_selected_items_1
+web_browsing/total_price_of_selected_items_2
+web_browsing/total_price_of_selected_items_3

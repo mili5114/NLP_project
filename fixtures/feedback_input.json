@@ -1,0 +1,13 @@
+{
+  "synthetic": true,
+  "purpose": "Interface example only; not an official task or result",
+  "python_output": "The synthetic return value is already printed.\n",
+  "events": [
+    {"index": 1, "tool": "example_tool", "args_repr": "('example',)", "kwargs_repr": "{}", "execution_status": "ok", "result_repr": "The synthetic return value is already printed.", "error_repr": null, "elapsed_seconds": 0.01},
+    {"index": 2, "tool": "example_tool", "args_repr": "('hidden',)", "kwargs_repr": "{}", "execution_status": "ok", "result_repr": "Another synthetic value not printed in Python output.", "error_repr": null, "elapsed_seconds": 0.01},
+    {"index": 3, "tool": "example_tool", "args_repr": "('invalid',)", "kwargs_repr": "{}", "execution_status": "error", "result_repr": null, "error_repr": "ValueError: synthetic error", "elapsed_seconds": 0.01}
+  ],
+  "condition": "C",
+  "method_config": {"min_match_chars": 12, "python_body_budget": 1000},
+  "expected_selection_before_rendering": {"omitted_event_indices": [1], "selected_event_indices": [2, 3]}
+}
