@@ -28,7 +28,8 @@ python -V
 
 echo "==> [3/4] 安装课程固定版本（requirements.txt）"
 python -m pip install --upgrade pip
-python -m pip install -r "${REPO_ROOT}/requirements.txt"
+# 集群到 files.pythonhosted.org 偶发长连接停滞，放宽超时与重试；关掉进度条便于记日志
+python -m pip install --timeout 60 --retries 20 --progress-bar off -r "${REPO_ROOT}/requirements.txt"
 
 echo "==> [4/4] 冻结完整依赖到 configs/locks/"
 mkdir -p "${REPO_ROOT}/configs/locks"
