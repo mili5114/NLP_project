@@ -31,14 +31,16 @@ export COND="${COND:-A}"
 echo "job=$SLURM_JOB_ID node=$(hostname) cond=$COND date=$(date -Is)"
 nvidia-smi --query-gpu=name,memory.total --format=csv,noheader
 
-# TODO(A)：runner 入口落地后启用。当前 src/runtime 只有骨架，先不要跑。
-# python -m src.runtime.runner \
-#     --config configs/course/runtime_settings.json \
-#     --split configs/course/split_manifest.json \
-#     --condition "$COND" \
-#     --model-dir "$MODEL_DIR" \
-#     --out "runs/dev_baselines/sibei/${COND}" \
-#     --tasks "${TASKS:-}"
+# 任务列表：TASKS 用空格或逗号分隔的 task_id；不给就按 SPLIT 跑全部
+TASK_ARGS=()
+if [ -n "${TASKS:-}" ]; then
+    for t in ${TASKS//,/ }; do TASK_ARGS+=(--task "$t"); done
+fi
 
-echo "runner 尚未实现，本作业仅验证节点与环境。"
-python scripts/env/check_env.py --model-dir "$MODEL_DIR" --skip-model
+python -m src.runtime.runner \
+    --split "${SPLIT:-DEV}" \
+    --condition "$COND" \
+    --model-dir "$MODEL_DIR" \
+    --runs-root "${RUNS_ROOT:-runs/dev_baselines}" \
+    --limit "${LIMIT:-0}" \
+    "${TASK_ARGS[@]}"

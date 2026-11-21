@@ -44,7 +44,11 @@ def _event_line(event: dict[str, Any], fmt: dict[str, str]) -> str:
 
 
 def feedback_official_output(
-    *, python_output: str, events: list[dict[str, Any]], settings: dict[str, Any]
+    *,
+    python_output: str,
+    events: list[dict[str, Any]],
+    settings: dict[str, Any],
+    condition: str = "A",
 ) -> dict[str, Any]:
     """条件 A：官方实现的做法——只把 Python 原始输出送回模型。"""
     limit = _limit_of(settings)
@@ -63,7 +67,11 @@ def feedback_official_output(
 
 
 def feedback_trace_first(
-    *, python_output: str, events: list[dict[str, Any]], settings: dict[str, Any]
+    *,
+    python_output: str,
+    events: list[dict[str, Any]],
+    settings: dict[str, Any],
+    condition: str = "B",
 ) -> dict[str, Any]:
     """条件 B：先放工具调用轨迹（按真实执行顺序），剩余预算才给 Python 输出。
 

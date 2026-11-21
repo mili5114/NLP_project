@@ -123,12 +123,14 @@ class EpisodeTest(unittest.TestCase):
             "c = find_flights('E', 'A', '2023-12-25')\n"
             "d = find_flights('E', 'A', '2023-12-25')\n"
             "e = find_flights('E', 'A', '2023-12-25')\n"
-            "print(len(a), e is None)"
+            "print('a_ok=', a is not None, 'b_ok=', b is not None, 'e_is_none=', e is None)"
         )
         result, root, _backend = self.run_episode([action(code), "Answer: ok"])
         turns = (root / "DEV" / "A" / Path(result["turns_path"]).parent.name / "turns.jsonl")
         first = json.loads(turns.read_text(encoding="utf-8").splitlines()[0])
-        self.assertIn("5 None", first["python_output"])
+        self.assertIn("a_ok= True", first["python_output"])
+        self.assertIn("b_ok= True", first["python_output"])
+        self.assertIn("e_is_none= True", first["python_output"])
         self.assertEqual(first["tool_events"][-1]["execution_status"], "blocked")
 
     def test_task_level_limit_32(self) -> None:

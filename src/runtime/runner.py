@@ -324,3 +324,62 @@ def run_episode(
         "turns_path": str(writer.turns_path),
         "messages": messages,
     }
+
+
+def main(argv: list[str] | None = None) -> int:
+    import argparse
+    import json
+    import os
+
+    from .backend import TransformersBackend
+    from .config import load_course_config
+
+    ap = argparse.ArgumentParser(description="跑一个 condition 下的若干 episode")
+    ap.add_argument("--task", action="append", help="task_id，可重复；不给则按 --split 取全部")
+    ap.add_argument("--split", default="DEV")
+    ap.add_argument("--condition", default="A")
+    ap.add_argument("--model-dir", default=os.environ.get("MODEL_DIR", os.path.expanduser("~/models/Qwen3.5-4B")))
+    ap.add_argument("--runs-root", default="runs/dev_baselines")
+    ap.add_argument("--limit", type=int, default=0, help="只跑前 N 个任务（pilot 用）")
+    args = ap.parse_args(argv)
+
+    cfg = load_course_config()
+    tasks = args.task or cfg.task_ids(args.split)
+    if args.limit:
+        tasks = tasks[: args.limit]
+
+    backend = TransformersBackend(
+        args.model_dir,
+        class_name=cfg.load_class_name(),
+        dtype=cfg.model["dtype"],
+        eos_token_ids=list(cfg.model["eos_token_ids"]),
+        stop_text=cfg.stop_text,
+    )
+
+    for i, task_id in enumerate(tasks, 1):
+        print(f"[{i}/{len(tasks)}] {args.condition} :: {task_id}", flush=True)
+        result = run_episode(
+            task_id=task_id,
+            condition=args.condition,
+            cfg=cfg,
+            backend=backend,
+            runs_root=args.runs_root,
+            split=args.split,
+        )
+        ep = result["episode"]
+        print(
+            f"    -> {ep['status']} / {ep['termination_reason']} "
+            f"calls={ep['model_calls']} tools={ep['tool_attempts_executed']} "
+            f"blocked={ep['tool_attempts_blocked']} answer={ep['final_answer']!r}",
+            flush=True,
+        )
+        print("    " + json.dumps(ep, ensure_ascii=False), flush=True)
+
+    peak = backend.peak_memory_gb()
+    if peak is not None:
+        print(f"peak_gpu_mem_gb={peak}")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
