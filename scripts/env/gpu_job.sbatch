@@ -17,6 +17,12 @@ set -euo pipefail
 cd "${SLURM_SUBMIT_DIR:-$HOME/codeact-work}"
 mkdir -p logs runs/dev_baselines
 
+# 新 clone 的仓库子模块是空目录，不初始化会在 import m3tooleval 时崩掉。
+if [ ! -f third_party/code-act/scripts/eval/m3tooleval/tasks/base.py ]; then
+    echo "[setup] upstream submodule empty, initializing..."
+    git submodule update --init --recursive
+fi
+
 module load anaconda3
 # shellcheck disable=SC1091
 source "$(conda info --base)/etc/profile.d/conda.sh"
