@@ -1,5 +1,10 @@
 {
-  "config_sha256": "synthetic-config-sha-placeholder",
+  "condition_config_sha256": {
+    "A": "synthetic-config-A-sha",
+    "B": "synthetic-config-B-sha",
+    "C": "synthetic-config-C-sha",
+    "D": "synthetic-config-D-sha"
+  },
   "note": "SYNTHETIC — NOT EXPERIMENTAL RESULTS",
   "run_id": "synthetic-e2e",
   "schema_version": "1.0",

@@ -1,6 +1,6 @@
 {
   "condition": "C",
-  "config_sha256": "synthetic-config-sha-placeholder",
+  "config_sha256": "synthetic-config-C-sha",
   "final_answer": null,
   "input_tokens": 200,
   "model_calls": 2,

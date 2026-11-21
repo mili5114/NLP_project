@@ -1,4 +1,4 @@
-"""Per-task aggregation, condition summaries and paired comparisons.
+"""Per-task aggregation, condition summaries, paired comparisons and input binding.
 
 Statistics deliberately:
   * include every recorded failure in the denominator;
@@ -7,6 +7,11 @@ Statistics deliberately:
   * never turn missing usage into 0 — it is excluded and counted separately;
   * mark INCOMPLETE when the audit is not clean, and carry the SYNTHETIC
     banner so demo output can never be mistaken for experimental results.
+
+Summarize must NOT blindly trust an externally supplied audit JSON.  The audit
+is bound to the scored file by (a) a canonical input fingerprint, (b) the exact
+recorded slot set and (c) run/config identity.  A stale audit paired with new
+data therefore yields INCOMPLETE, never COMPLETE.
 """
 
 from __future__ import annotations
@@ -16,7 +21,7 @@ from pathlib import Path
 from typing import Any
 
 from .errors import InputError
-from .io import write_json
+from .io import episode_fingerprint, write_json
 
 SYNTHETIC_BANNER = "SYNTHETIC — NOT EXPERIMENTAL RESULTS"
 INCOMPLETE_BANNER = "INCOMPLETE — NOT FINAL RESULTS"
@@ -43,23 +48,146 @@ def _mean(values: list[float]) -> float | None:
     return round(sum(values) / len(values), 4) if values else None
 
 
+def _slot(task_id: Any, condition: Any) -> str:
+    return f"{task_id}|{condition}"
+
+
+def _config_by_condition(records: list[dict]) -> dict[str, list[str]]:
+    sets: dict[str, set[str]] = {}
+    for record in records:
+        sets.setdefault(str(record.get("condition")), set()).add(str(record.get("config_sha256")))
+    return {key: sorted(value) for key, value in sets.items()}
+
+
+def validate_binding(
+    scored: list[dict], *, split: str, conditions: list[str],
+    expected_tasks: list[str], audit_report: dict,
+) -> dict:
+    """Re-derive integrity from the scored file; do not trust audit.complete.
+
+    Returns a dict with ``problems`` (each ``{code, detail}``), identity fields
+    and an effective ``complete`` that requires the audit to be genuinely bound
+    to this exact scored set.
+    """
+    problems: list[dict] = []
+
+    def add(code: str, detail: str) -> None:
+        problems.append({"code": code, "detail": detail})
+
+    # --- success must be a real boolean for every record ---
+    bad_success = [_slot(r.get("task_id"), r.get("condition"))
+                   for r in scored if not isinstance(r.get("success"), bool)]
+    if bad_success:
+        add("non_boolean_success", f"success is not bool for slots: {sorted(set(bad_success))}")
+
+    # --- duplicates / split / conditions re-checked here ---
+    seen: dict[str, int] = {}
+    duplicates: list[str] = []
+    for record in scored:
+        key = _slot(record.get("task_id"), record.get("condition"))
+        if key in seen:
+            duplicates.append(key)
+        else:
+            seen[key] = 1
+    if duplicates:
+        add("duplicate_slot", f"duplicate scored slots: {sorted(set(duplicates))}")
+
+    wrong_split = [_slot(r.get("task_id"), r.get("condition"))
+                   for r in scored
+                   if str(r.get("split", "")).upper() != str(split).upper()]
+    if wrong_split:
+        add("wrong_split", f"split != {split!r} for slots: {sorted(set(wrong_split))}")
+
+    cond_mismatch = [_slot(r.get("task_id"), r.get("condition"))
+                     for r in scored if r.get("condition") not in conditions]
+    if cond_mismatch:
+        add("condition_mismatch", f"condition not in {conditions}: {sorted(set(cond_mismatch))}")
+
+    unknown_tasks = [_slot(r.get("task_id"), r.get("condition"))
+                     for r in scored if r.get("task_id") not in set(expected_tasks)]
+    if unknown_tasks:
+        add("unknown_task", f"task_id not in expected set: {sorted(set(unknown_tasks))}")
+
+    # Independent missing-slot check: do not rely on the audit's own set.
+    expected_slots = {_slot(t, c) for t in expected_tasks for c in conditions}
+    missing_slots = sorted(expected_slots - set(seen))
+    if missing_slots:
+        add("missing_slot", f"expected slots without a scored record: {missing_slots}")
+
+    # --- fingerprint + slot-set + run/config binding to the audit ---
+    scored_fingerprint = episode_fingerprint(scored)
+    audit_fingerprint = audit_report.get("input_fingerprint")
+    fingerprint_match = bool(audit_fingerprint) and audit_fingerprint == scored_fingerprint
+    if not audit_fingerprint:
+        add("audit_missing_fingerprint",
+            "audit report has no input_fingerprint; cannot prove it matches this scored file")
+    elif not fingerprint_match:
+        add("audit_fingerprint_mismatch",
+            "audit input_fingerprint does not match the scored file (stale audit or new data)")
+
+    scored_slots = sorted(seen)
+    audit_slots = audit_report.get("recorded_slots")
+    slot_match = isinstance(audit_slots, list) and sorted(audit_slots) == scored_slots
+    if not slot_match:
+        add("audit_slot_mismatch",
+            "audit recorded_slots do not equal the scored slot set")
+
+    scored_run_ids = sorted({str(r.get("run_id")) for r in scored})
+    audit_run_ids = sorted(audit_report.get("run_ids") or [])
+    run_match = scored_run_ids == audit_run_ids
+    if not run_match:
+        add("run_identity_mismatch",
+            f"run_ids scored={scored_run_ids} audit={audit_run_ids}")
+
+    scored_config = _config_by_condition(scored)
+    audit_config = {k: sorted(v) for k, v in (audit_report.get("config_by_condition") or {}).items()}
+    config_match = scored_config == audit_config
+    if not config_match:
+        add("config_identity_mismatch",
+            f"config_by_condition scored={scored_config} audit={audit_config}")
+
+    audit_complete = bool(audit_report.get("complete"))
+    if not audit_complete:
+        add("audit_not_complete", f"audit status={audit_report.get('status')!r}")
+
+    return {
+        "problems": problems,
+        "scored_fingerprint": scored_fingerprint,
+        "audit_fingerprint": audit_fingerprint,
+        "fingerprint_match": fingerprint_match,
+        "slot_match": slot_match,
+        "run_identity_match": run_match,
+        "config_identity_match": config_match,
+        "audit_complete": audit_complete,
+        "complete": audit_complete and not problems,
+    }
+
+
 def build_per_task_rows(
     scored: list[dict], *, expected_tasks: list[str], synthetic: bool
 ) -> list[dict]:
-    """One row per recorded scored episode; unknown/off-split slots are kept and flagged."""
+    """One row per unique (task_id, condition); duplicates keep the first and are
+    excluded by validate_binding, so a duplicate can never inflate success > 100%.
+    """
     expected = set(expected_tasks)
     rows: list[dict] = []
+    seen: set[str] = set()
     for record in scored:
         if not isinstance(record, dict):
             raise InputError("scored input contains a non-object line")
         task_id = record.get("task_id")
         if task_id not in expected:
-            # Never drop it silently — surface it as an off-expectation row.
             raise InputError(f"scored record for unexpected task_id={task_id!r}")
+        key = _slot(task_id, record.get("condition"))
+        if key in seen:
+            continue  # already counted; validation reports the duplicate
+        seen.add(key)
+        success = record.get("success")
         rows.append({
             "task_id": task_id,
             "condition": record.get("condition"),
-            "success": record.get("success"),
+            # Keep non-bool success as None so it is never counted as True.
+            "success": success if isinstance(success, bool) else None,
             "termination_reason": record.get("termination_reason"),
             "input_tokens": record.get("input_tokens"),
             "output_tokens": record.get("output_tokens"),
@@ -89,20 +217,23 @@ def compute_condition_summary(
         group = [r for r in rows if r["condition"] == condition]
         successes = [r for r in group if r["success"] is True]
         scored = [r for r in group if isinstance(r["success"], bool)]
-        # Per-metric means use the rows where THAT metric is available. A
-        # missing input value must not erase a valid output value (or vice versa).
         input_rows = [r for r in group if isinstance(r.get("input_tokens"), int)
                       and not isinstance(r.get("input_tokens"), bool)]
         output_rows = [r for r in group if isinstance(r.get("output_tokens"), int)
                        and not isinstance(r.get("output_tokens"), bool)]
-        summary = {
+        success_rate = None
+        if n_expected:
+            # Conservative cap: even a malformed/duplicated input can never
+            # report more than 100% success.
+            success_rate = round(min(1.0, len(successes) / n_expected), 4)
+        summaries.append({
             "condition": condition,
             "N_expected": n_expected,
             "N_recorded": len(group),
             "N_scored": len(scored),
             "missing_slots": max(0, n_expected - len(group)),
             "success_count": len(successes),
-            "success_rate": round(len(successes) / n_expected, 4) if n_expected else None,
+            "success_rate": success_rate,
             "mean_input_tokens": _mean([float(r["input_tokens"]) for r in input_rows]),
             "mean_output_tokens": _mean([float(r["output_tokens"]) for r in output_rows]),
             "mean_model_calls": _mean([float(r["model_calls"]) for r in group
@@ -113,8 +244,7 @@ def compute_condition_summary(
             "n_with_output_usage": len(output_rows),
             "status": status,
             "banner": banner,
-        }
-        summaries.append(summary)
+        })
     return summaries
 
 
@@ -201,9 +331,9 @@ def _write_csv(path: Path, fields: list[str], rows: list[dict]) -> None:
 def write_summary(
     out_dir: str | Path, *, rows: list[dict], condition_summaries: list[dict],
     paired: dict[str, dict], expected_tasks: list[str], audit_report: dict,
-    synthetic: bool, conditions: list[str],
+    binding: dict, complete: bool, synthetic: bool, conditions: list[str],
 ) -> dict[str, str]:
-    """Write CSVs plus summary.json; return map of artifact name -> path."""
+    """Write CSVs plus summary.json; ``complete`` is the *effective* status."""
     out = Path(out_dir)
     out.mkdir(parents=True, exist_ok=True)
     paths = {
@@ -223,13 +353,13 @@ def write_summary(
             pair["rows"],
         )
 
-    banner = SYNTHETIC_BANNER if synthetic else (
-        INCOMPLETE_BANNER if not audit_report.get("complete", False) else ""
-    )
+    banner = SYNTHETIC_BANNER if synthetic else (INCOMPLETE_BANNER if not complete else "")
     payload = {
         "banner": banner,
         "synthetic": synthetic,
-        "complete": bool(audit_report.get("complete", False)),
+        # Effective completeness comes from binding, not audit.complete alone.
+        "complete": bool(complete),
+        "binding": binding,
         "split": audit_report.get("split"),
         "conditions": conditions,
         "expected_tasks": expected_tasks,

@@ -4,6 +4,17 @@
   "audit_status": "PASS",
   "audit_warnings": 0,
   "banner": "SYNTHETIC — NOT EXPERIMENTAL RESULTS",
+  "binding": {
+    "audit_complete": true,
+    "audit_fingerprint": "c0d5b972b1918e94f2464929934ff4b467db23f8ba4acba4d3f5f501177f7a37",
+    "complete": true,
+    "config_identity_match": true,
+    "fingerprint_match": true,
+    "problems": [],
+    "run_identity_match": true,
+    "scored_fingerprint": "c0d5b972b1918e94f2464929934ff4b467db23f8ba4acba4d3f5f501177f7a37",
+    "slot_match": true
+  },
   "complete": true,
   "condition_summary": [
     {
@@ -12,9 +23,9 @@
       "N_scored": 3,
       "banner": "SYNTHETIC — NOT EXPERIMENTAL RESULTS",
       "condition": "A",
-      "mean_input_tokens": 220.0,
-      "mean_model_calls": 2.0,
-      "mean_output_tokens": 15.0,
+      "mean_input_tokens": 140.0,
+      "mean_model_calls": 1.3333,
+      "mean_output_tokens": 11.6667,
       "mean_wall_seconds": 1.0,
       "missing_slots": 0,
       "n_with_output_usage": 3,
@@ -29,9 +40,9 @@
       "N_scored": 3,
       "banner": "SYNTHETIC — NOT EXPERIMENTAL RESULTS",
       "condition": "B",
-      "mean_input_tokens": 240.0,
-      "mean_model_calls": 2.0,
-      "mean_output_tokens": 18.0,
+      "mean_input_tokens": 110.0,
+      "mean_model_calls": 1.0,
+      "mean_output_tokens": 12.0,
       "mean_wall_seconds": 1.2,
       "missing_slots": 0,
       "n_with_output_usage": 3,
@@ -46,9 +57,9 @@
       "N_scored": 3,
       "banner": "SYNTHETIC — NOT EXPERIMENTAL RESULTS",
       "condition": "C",
-      "mean_input_tokens": 200.0,
-      "mean_model_calls": 2.0,
-      "mean_output_tokens": 13.0,
+      "mean_input_tokens": 126.6667,
+      "mean_model_calls": 1.3333,
+      "mean_output_tokens": 10.3333,
       "mean_wall_seconds": 0.9,
       "missing_slots": 0,
       "n_with_output_usage": 3,
@@ -63,9 +74,9 @@
       "N_scored": 3,
       "banner": "SYNTHETIC — NOT EXPERIMENTAL RESULTS",
       "condition": "D",
-      "mean_input_tokens": 210.0,
-      "mean_model_calls": 2.0,
-      "mean_output_tokens": 16.0,
+      "mean_input_tokens": 95.0,
+      "mean_model_calls": 1.0,
+      "mean_output_tokens": 11.0,
       "mean_wall_seconds": 1.1,
       "missing_slots": 0,
       "n_with_output_usage": 3,
@@ -104,25 +115,25 @@
       "rows": [
         {
           "base_success": true,
-          "input_tokens_delta": 40,
+          "input_tokens_delta": 20,
           "outcome": "base_only",
-          "output_tokens_delta": 5,
+          "output_tokens_delta": 3,
           "target_success": false,
           "task_id": "synthetic/task_alpha"
         },
         {
           "base_success": true,
-          "input_tokens_delta": 40,
+          "input_tokens_delta": 20,
           "outcome": "both_success",
-          "output_tokens_delta": 5,
+          "output_tokens_delta": 3,
           "target_success": true,
           "task_id": "synthetic/task_beta"
         },
         {
           "base_success": false,
-          "input_tokens_delta": 40,
+          "input_tokens_delta": -90,
           "outcome": "both_fail",
-          "output_tokens_delta": 5,
+          "output_tokens_delta": -1,
           "target_success": false,
           "task_id": "synthetic/task_gamma"
         }
@@ -145,25 +156,25 @@
       "rows": [
         {
           "base_success": true,
-          "input_tokens_delta": 10,
+          "input_tokens_delta": 5,
           "outcome": "base_only",
-          "output_tokens_delta": 3,
+          "output_tokens_delta": 2,
           "target_success": false,
           "task_id": "synthetic/task_alpha"
         },
         {
           "base_success": true,
-          "input_tokens_delta": 10,
+          "input_tokens_delta": 5,
           "outcome": "base_only",
-          "output_tokens_delta": 3,
+          "output_tokens_delta": 2,
           "target_success": false,
           "task_id": "synthetic/task_beta"
         },
         {
           "base_success": false,
-          "input_tokens_delta": 10,
+          "input_tokens_delta": -105,
           "outcome": "target_only",
-          "output_tokens_delta": 3,
+          "output_tokens_delta": -2,
           "target_success": true,
           "task_id": "synthetic/task_gamma"
         }

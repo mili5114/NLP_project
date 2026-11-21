@@ -12,7 +12,7 @@ from pathlib import Path
 from typing import Any
 
 from .errors import InputError
-from .io import is_synthetic_record, read_json
+from .io import episode_fingerprint, is_synthetic_record, read_json
 from .turns_reader import read_turns, summarize_turn_usage
 
 OWNER_A = "A (runtime / online logs)"
@@ -74,8 +74,10 @@ def audit_episodes(
     trajectory_root: str | Path | None = None,
     episode_sources: list[str] | None = None,
     expected_config_sha: str | None = None,
+    condition_config_shas: dict[str, str] | None = None,
     expected_code_commit: str | None = None,
     expected_model_revision: str | None = None,
+    require_version_checks: bool | None = None,
 ) -> dict:
     """Audit a set of episodes and return a JSON-serializable report.
 
@@ -83,6 +85,12 @@ def audit_episodes(
     manifest[split] as the expected task set.  Synthetic mode requires an
     explicit synthetic_tasks list.  The report is written even when the status
     is FAIL/INCOMPLETE so nothing silently disappears.
+
+    Formal version checks are mandatory: a formal audit cannot claim PASS while
+    silently skipping version/config verification.  Config hashes are checked
+    per condition (``condition_config_shas``), because A/B/C/D legitimately have
+    different full configs; the four conditions are NOT required to share one
+    hash.
     """
     if not conditions:
         raise InputError("conditions must not be empty")
@@ -125,6 +133,22 @@ def audit_episodes(
             "owner": owner,
         }
         bucket.append(entry)
+
+    if require_version_checks is None:
+        require_version_checks = not allow_synthetic
+    if require_version_checks and not allow_synthetic:
+        missing_expectations = []
+        if not condition_config_shas and not expected_config_sha:
+            missing_expectations.append("config hash (--condition-config-sha / --expected-config-sha)")
+        if not expected_code_commit:
+            missing_expectations.append("code commit (--expected-code-commit)")
+        if not expected_model_revision:
+            missing_expectations.append("model revision (--expected-model-revision)")
+        if missing_expectations:
+            # A formal audit may not skip version verification and still PASS.
+            issue(errors, "formal_version_expectation_missing", None,
+                  "formal audit missing required version expectations: "
+                  + "; ".join(missing_expectations), OWNER_B)
 
     seen: dict[str, dict] = {}
     duplicates: list[str] = []
@@ -187,20 +211,57 @@ def audit_episodes(
                 "has_answer": ep.get("final_answer") is not None,
             })
 
-        # Version / config hash cross-checks (only when an expected value is given).
-        if expected_config_sha is not None:
-            if ep.get("config_sha256") != expected_config_sha:
+        # --- Version / config identity ---
+        ep_config = ep.get("config_sha256")
+        if require_version_checks and not allow_synthetic:
+            # Required fields may not be "present-only" checks: absence is a FAIL.
+            if not ep_config:
+                issue(errors, "config_sha256_missing", ep,
+                      "formal episode is missing config_sha256", OWNER_B)
+            if "code_commit" not in ep:
+                issue(errors, "code_commit_missing", ep,
+                      "formal episode is missing code_commit", OWNER_A)
+            if "model_revision" not in ep:
+                issue(errors, "model_revision_missing", ep,
+                      "formal episode is missing model_revision", OWNER_A)
+
+        if condition_config_shas:
+            expected_for_condition = condition_config_shas.get(condition)
+            if expected_for_condition is None:
+                issue(errors, "condition_config_sha_missing", ep,
+                      f"no expected config hash supplied for condition {condition!r}", OWNER_B)
+            elif ep_config != expected_for_condition:
+                # Per-condition check: A/B/C/D may legitimately differ in full config.
                 issue(errors, "config_hash_mismatch", ep,
-                      f"config_sha256={ep.get('config_sha256')!r} != {expected_config_sha!r}",
-                      OWNER_B)
-        else:
+                      f"condition {condition}: config_sha256={ep_config!r} != "
+                      f"{expected_for_condition!r}", OWNER_B)
+        elif expected_config_sha is not None:
+            if ep_config != expected_config_sha:
+                issue(errors, "config_hash_mismatch", ep,
+                      f"config_sha256={ep_config!r} != {expected_config_sha!r}", OWNER_B)
+        elif not require_version_checks:
             unverifiable.append({"code": "config_hash_not_checked", "slot": key,
-                                 "detail": "no expected config hash supplied", "owner": OWNER_B})
-        for field, expected in (("code_commit", expected_code_commit),
-                                ("model_revision", expected_model_revision)):
-            if expected is not None and field in ep and ep[field] != expected:
+                                 "detail": "no expected config hash supplied (allowed in "
+                                           "synthetic mode; formal audits require one)",
+                                 "owner": OWNER_B})
+
+        if expected_code_commit is not None:
+            actual_commit = ep.get("code_commit")
+            if actual_commit is None:
+                issue(errors, "code_commit_missing", ep,
+                      "episode has no code_commit to compare", OWNER_A)
+            elif actual_commit != expected_code_commit:
                 issue(errors, "version_mismatch", ep,
-                      f"{field}={ep[field]!r} != {expected!r}", OWNER_A)
+                      f"code_commit={actual_commit!r} != {expected_code_commit!r}", OWNER_A)
+        if expected_model_revision is not None:
+            actual_revision = ep.get("model_revision")
+            if actual_revision is None:
+                issue(errors, "model_revision_missing", ep,
+                      "episode has no model_revision to compare", OWNER_A)
+            elif actual_revision != expected_model_revision:
+                issue(errors, "version_mismatch", ep,
+                      f"model_revision={actual_revision!r} != {expected_model_revision!r}",
+                      OWNER_A)
 
         # Trajectory + per-call log checks.
         traj = ep.get("trajectory_path")
@@ -248,19 +309,37 @@ def audit_episodes(
                                 issue(errors, "token_total_mismatch", ep,
                                       f"sum(turns.{field})={actual} != episode.{field}={declared}",
                                       OWNER_A)
-                    if ep.get("final_answer") is not None and not usage["final_answer_turns"]:
+                    # Two final-answer concepts, checked separately.
+                    produced = usage["final_answer_turns"]
+                    final_only = usage["final_only_turns"]
+                    has_answer = ep.get("final_answer") is not None
+                    if has_answer and len(produced) != 1:
                         issue(errors, "final_answer_call_missing", ep,
-                              "episode has a final answer but no turn is marked is_final",
-                              OWNER_A)
-                    if len(usage["final_answer_turns"]) > 1:
-                        issue(errors, "multiple_final_answer_calls", ep,
-                              f"is_final turns: {usage['final_answer_turns']}", OWNER_A)
+                              "episode has a final answer but produced_final_answer "
+                              f"turns={produced} (expected exactly one)", OWNER_A)
+                    if not has_answer and produced:
+                        issue(errors, "answer_state_mismatch", ep,
+                              f"episode has no final_answer but turns {produced} set "
+                              "produced_final_answer", OWNER_A)
+                    if len(final_only) > 1:
+                        issue(errors, "multiple_final_only_turns", ep,
+                              f"is_final_answer_turn turns={final_only}", OWNER_A)
+                    if final_only:
+                        if final_only != [turns[-1]["turn_index"]]:
+                            issue(errors, "final_only_turn_not_last", ep,
+                                  f"final-only turn(s) {final_only} must be the last "
+                                  f"turn_index {turns[-1]['turn_index']}", OWNER_A)
+                        if turns[-1].get("events"):
+                            issue(errors, "tool_in_final_answer_turn", ep,
+                                  f"final-only turn has {len(turns[-1]['events'])} tool "
+                                  "events; tools do not execute in the final turn", OWNER_A)
 
                     # Course budget checks that require the per-call log.
                     interaction_cap = limits.get("interaction_turns")
-                    if interaction_cap is not None and len(turns) > int(interaction_cap) + 1:
+                    interaction_count = len(turns) - len(final_only)
+                    if interaction_cap is not None and interaction_count > int(interaction_cap):
                         issue(errors, "turn_budget_exceeded", ep,
-                              f"{len(turns)} model calls > {interaction_cap}+1", OWNER_A)
+                              f"{interaction_count} interaction turns > {interaction_cap}", OWNER_A)
                     feedback_cap = limits.get("feedback_characters")
                     if feedback_cap is not None and usage["max_feedback_chars"] > int(feedback_cap):
                         issue(errors, "feedback_char_limit_exceeded", ep,
@@ -272,17 +351,20 @@ def audit_episodes(
                         out = turn.get("output_tokens")
                         if not isinstance(out, int) or isinstance(out, bool):
                             continue
-                        cap = final_cap if turn["is_final"] else per_turn_cap
+                        # Only the dedicated final-only turn gets the 128 cap.  An
+                        # interaction turn that produced the Answer still gets 384.
+                        cap = final_cap if turn["is_final_answer_turn"] else per_turn_cap
                         if cap is not None and out > int(cap):
                             issue(errors, "turn_token_limit_exceeded", ep,
-                                  f"turn {turn['turn_index']} output_tokens={out} > {cap}",
+                                  f"turn {turn['turn_index']} output_tokens={out} > {cap} "
+                                  f"(is_final_answer_turn={turn['is_final_answer_turn']})",
                                   OWNER_A)
                     per_action = limits.get("tool_attempts_per_action")
                     if per_action is not None:
                         turn_by_index = {str(t["turn_index"]): t for t in turns}
                         for index, count in usage["tool_events_per_turn"].items():
                             turn_obj = turn_by_index.get(index, {})
-                            if count > int(per_action) and not turn_obj.get("is_final"):
+                            if count > int(per_action) and not turn_obj.get("is_final_answer_turn"):
                                 issue(errors, "tool_attempts_per_action_exceeded", ep,
                                       f"turn {index} has {count} tool events > {per_action}",
                                       OWNER_A)
@@ -324,6 +406,14 @@ def audit_episodes(
     else:
         status = "PASS"
 
+    run_ids = sorted({str(ep.get("run_id")) for ep in episodes if isinstance(ep, dict)})
+    config_sets: dict[str, set[str]] = {}
+    for ep in episodes:
+        if not isinstance(ep, dict):
+            continue
+        config_sets.setdefault(str(ep.get("condition")), set()).add(str(ep.get("config_sha256")))
+    config_by_condition = {k: sorted(v) for k, v in config_sets.items()}
+
     return {
         "mode": mode,
         "synthetic": bool(eps_with_synthetic) or allow_synthetic,
@@ -334,6 +424,18 @@ def audit_episodes(
         "expected_slots": sorted(expected_slots),
         "recorded_slot_count": len(seen),
         "recorded_slots": sorted(seen),
+        # Identity of the audited input; summarize.py recomputes this from the
+        # scored file and refuses to treat a stale audit as authoritative.
+        "input_fingerprint": episode_fingerprint(episodes),
+        "run_ids": run_ids,
+        "config_by_condition": config_by_condition,
+        "formal_version_checks": bool(require_version_checks),
+        "final_answer_semantics": (
+            "produced_final_answer marks the call whose output is the final Answer "
+            "(interaction turn, 384 cap); is_final_answer_turn marks the dedicated "
+            "final-only turn after budget exhaustion (128 cap, no tools). Pending "
+            "A's real turns schema; map fields once in turns_reader."
+        ),
         "missing_slots": missing_slots,
         "duplicate_slots": sorted(set(duplicates)),
         "unknown_task_slots": sorted(set(unknown_tasks)),

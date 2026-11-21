@@ -98,12 +98,9 @@ def score_episode(episode: dict, *, reference: Any, answer_type: str) -> dict:
     prediction = episode.get("final_answer")
     result = dict(episode)  # preserve all online fields, no mutation
 
-    if prediction is None:
-        result["success"] = False
-        result["scoring_reason"] = REASON_NO_ANSWER
-        result["answer_type"] = answer_type
-        return result
-
+    # Validate the declared reference type BEFORE the null-answer shortcut.
+    # A missing answer must never hide a corrupt/invalid offline reference: that
+    # would turn a data error into a silent "model was wrong".
     if answer_type == "numeric":
         ref_dec = _coerce_decimal(reference)
         if ref_dec is None:
@@ -111,6 +108,20 @@ def score_episode(episode: dict, *, reference: Any, answer_type: str) -> dict:
                 f"reference for task {episode.get('task_id')!r} is not a finite numeric "
                 f"value: {reference!r}"
             )
+    else:  # answer_type == "string"
+        if not isinstance(reference, str):
+            raise DataError(
+                f"reference for task {episode.get('task_id')!r} must be a string for "
+                f"answer_type='string', got {type(reference).__name__}"
+            )
+
+    if prediction is None:
+        result["success"] = False
+        result["scoring_reason"] = REASON_NO_ANSWER
+        result["answer_type"] = answer_type
+        return result
+
+    if answer_type == "numeric":
         pred_dec = _coerce_decimal(prediction)
         if pred_dec is None:
             # A NaN/Infinity/unparseable *prediction* is a model failure we keep;
@@ -125,12 +136,7 @@ def score_episode(episode: dict, *, reference: Any, answer_type: str) -> dict:
         else:
             success = _decimal_within_tolerance(pred_dec, ref_dec)
             reason = REASON_CORRECT if success else REASON_NUMERIC_MISMATCH
-    else:  # answer_type == "string"
-        if not isinstance(reference, str):
-            raise DataError(
-                f"reference for task {episode.get('task_id')!r} must be a string for "
-                f"answer_type='string', got {type(reference).__name__}"
-            )
+    else:  # answer_type == "string"; reference already validated above
         if not isinstance(prediction, str):
             # Non-string predictions simply cannot match; keep as a failure.
             success, reason = False, REASON_STRING_MISMATCH

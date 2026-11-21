@@ -43,10 +43,36 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--settings", default=str(REPO_ROOT / "configs/course/runtime_settings.json"))
     parser.add_argument("--trajectory-root", default=str(REPO_ROOT),
                         help="base dir for relative trajectory_path values")
-    parser.add_argument("--expected-config-sha", default=None)
+    parser.add_argument("--expected-config-sha", default=None,
+                        help="single expected config hash (legacy; prefer per-condition)")
+    parser.add_argument("--condition-config-sha", nargs="+", default=None, metavar="C=SHA",
+                        help="per-condition config hashes, e.g. A=<sha> B=<sha> ...")
+    parser.add_argument("--condition-config-sha-file", default=None,
+                        help="JSON file mapping condition -> config sha256")
     parser.add_argument("--expected-code-commit", default=None)
     parser.add_argument("--expected-model-revision", default=None)
     return parser
+
+
+def _parse_condition_shas(pairs: list[str] | None, path: str | None) -> dict[str, str] | None:
+    if pairs and path:
+        raise EvaluationError("use either --condition-config-sha or --condition-config-sha-file, not both")
+    if path:
+        value = read_json(path)
+        if not isinstance(value, dict) or not all(
+            isinstance(k, str) and isinstance(v, str) for k, v in value.items()
+        ):
+            raise EvaluationError(f"{path} must map condition -> config sha256")
+        return value
+    if not pairs:
+        return None
+    result: dict[str, str] = {}
+    for pair in pairs:
+        if "=" not in pair:
+            raise EvaluationError(f"invalid --condition-config-sha value {pair!r}; expected C=SHA")
+        condition, sha = pair.split("=", 1)
+        result[condition.strip()] = sha.strip()
+    return result
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -63,6 +89,9 @@ def main(argv: list[str] | None = None) -> int:
 
         manifest = None if synthetic_tasks else load_manifest(args.manifest)
         settings = read_json(args.settings)
+        condition_shas = _parse_condition_shas(
+            args.condition_config_sha, args.condition_config_sha_file
+        )
         report = audit_episodes(
             episodes,
             split=args.split,
@@ -74,6 +103,7 @@ def main(argv: list[str] | None = None) -> int:
             trajectory_root=args.trajectory_root,
             episode_sources=sources,
             expected_config_sha=args.expected_config_sha,
+            condition_config_shas=condition_shas,
             expected_code_commit=args.expected_code_commit,
             expected_model_revision=args.expected_model_revision,
         )

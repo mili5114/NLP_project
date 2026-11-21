@@ -92,6 +92,15 @@ class NumericScoringTests(unittest.TestCase):
             with self.subTest(ref=ref), self.assertRaises(DataError):
                 score("1.0", ref)
 
+    def test_no_answer_still_validates_reference(self):
+        # A null prediction must NOT short-circuit past reference validation:
+        # a corrupt reference is a data error, not a silent model failure.
+        for ref in ["NaN", "Infinity", "abc", None, ""]:
+            with self.subTest(ref=ref), self.assertRaises(DataError):
+                score(None, ref, "numeric")
+        with self.subTest(ref="non-string"), self.assertRaises(DataError):
+            score(None, 42, "string")
+
 
 class StringScoringTests(unittest.TestCase):
     def test_strip_only_not_case_or_internal_space(self):

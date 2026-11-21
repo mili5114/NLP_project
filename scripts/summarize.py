@@ -22,6 +22,7 @@ from src.evaluation.aggregation import (  # noqa: E402
     build_per_task_rows,
     compute_condition_summary,
     paired_comparison,
+    validate_binding,
     write_summary,
 )
 from src.evaluation.audit import load_manifest  # noqa: E402
@@ -69,26 +70,31 @@ def main(argv: list[str] | None = None) -> int:
                 raise InputError(f"formal split must be DEV or EVAL, got {args.split!r}")
             expected_tasks = load_manifest(args.manifest)[args.split]
 
-        rows = build_per_task_rows(scored, expected_tasks=expected_tasks,
-                                   synthetic=bool(synthetic_tasks or audit_report.get("synthetic")))
+        synthetic = bool(synthetic_tasks or audit_report.get("synthetic"))
+        # Re-derive integrity from the scored file; audit.complete is only one input.
+        binding = validate_binding(
+            scored, split=args.split, conditions=args.conditions,
+            expected_tasks=expected_tasks, audit_report=audit_report,
+        )
+        complete = binding["complete"]
+
+        rows = build_per_task_rows(scored, expected_tasks=expected_tasks, synthetic=synthetic)
         summaries = compute_condition_summary(
             rows, expected_tasks=expected_tasks, conditions=args.conditions,
-            audit_complete=bool(audit_report.get("complete", False)),
-            synthetic=bool(synthetic_tasks or audit_report.get("synthetic")),
+            audit_complete=complete, synthetic=synthetic,
         )
         paired: dict[str, dict] = {}
         for base, target in (("C", "B"), ("C", "D")):
             if base in args.conditions and target in args.conditions:
                 paired[f"{base}_vs_{target}"] = paired_comparison(
                     rows, base=base, target=target, expected_tasks=expected_tasks,
-                    synthetic=bool(synthetic_tasks or audit_report.get("synthetic")),
-                    audit_complete=bool(audit_report.get("complete", False)),
+                    synthetic=synthetic, audit_complete=complete,
                 )
 
         paths = write_summary(
             args.out_dir, rows=rows, condition_summaries=summaries, paired=paired,
             expected_tasks=expected_tasks, audit_report=audit_report,
-            synthetic=bool(synthetic_tasks or audit_report.get("synthetic")),
+            binding=binding, complete=complete, synthetic=synthetic,
             conditions=args.conditions,
         )
         for summary in summaries:
@@ -98,8 +104,10 @@ def main(argv: list[str] | None = None) -> int:
                 f"in_tok={summary['mean_input_tokens']} out_tok={summary['mean_output_tokens']} "
                 f"status={summary['status']}"
             )
-        print(f"artifacts={paths}")
-        return 0
+        if binding["problems"]:
+            print(f"BINDING PROBLEMS: {[p['code'] for p in binding['problems']]}", file=sys.stderr)
+        print(f"effective_complete={complete} artifacts={paths}")
+        return 0 if complete else 2
     except EvaluationError as exc:
         print(f"ERROR: {exc}", file=sys.stderr)
         return 2

@@ -8,12 +8,23 @@ IMPORTANT — scope of this schema:
   (a single adapter change), rather than silently accepting arbitrary keys or
   filling missing token usage with zeros.
 
-Synthetic turns minimal schema (one JSON object per model call, including the
-final-answer call):
+Two separate final-answer concepts (course rules, Assignment_Attachment §2):
+  * produced_final_answer — THIS call's parsed output is the final Answer.
+    A normal interaction turn may produce it ("the first parseable Answer ends
+    the task"); such a turn is still an interaction turn and is bounded by the
+    384-token interaction limit.
+  * is_final_answer_turn — the extra final-answer-only turn appended AFTER the
+    interaction budget is exhausted. It executes no tools and is bounded by the
+    128-token final-answer limit.
+  Do not collapse these into one boolean: an interaction turn that answers is
+  not subject to the 128-token final limit.
+
+Synthetic turns minimal schema (one JSON object per model call; the call that
+produces the final answer is also written as a row):
   turn_index: int >= 1                     # 1-based order within the episode
-  is_final: bool                           # True only for the final-answer call
-  messages: list                           # actual model input messages (may be
-                                           # abbreviated in synthetic fixtures)
+  is_final_answer_turn: bool               # dedicated final-only turn (128 cap)
+  produced_final_answer: bool              # this call's output is the final Answer
+  messages: list
   generation_settings: dict
   raw_model_text: str
   parsed_action: object
@@ -37,7 +48,8 @@ from .io import read_jsonl
 
 REQUIRED_TURN_FIELDS = (
     "turn_index",
-    "is_final",
+    "is_final_answer_turn",
+    "produced_final_answer",
     "messages",
     "raw_model_text",
     "events",
@@ -54,8 +66,9 @@ def read_turns(path: str | Path) -> list[dict]:
             raise InputError(f"turns line {i} in {path} missing fields: {missing}")
         if not isinstance(turn["turn_index"], int) or isinstance(turn["turn_index"], bool):
             raise InputError(f"turns line {i} in {path} has invalid turn_index")
-        if not isinstance(turn["is_final"], bool):
-            raise InputError(f"turns line {i} in {path} has non-bool is_final")
+        for flag in ("is_final_answer_turn", "produced_final_answer"):
+            if not isinstance(turn[flag], bool):
+                raise InputError(f"turns line {i} in {path} has non-bool {flag}")
         if not isinstance(turn["events"], list):
             raise InputError(f"turns line {i} in {path} has non-list events")
     indices = [t["turn_index"] for t in records]
@@ -67,17 +80,26 @@ def read_turns(path: str | Path) -> list[dict]:
 
 
 def summarize_turn_usage(turns: list[dict]) -> dict:
-    """Sum token usage over every call; missing usage is reported, never zero-filled."""
+    """Sum token usage over every call; missing usage is reported, never zero-filled.
+
+    Returns the two final-answer concepts separately:
+      final_answer_turns — calls whose output is the final Answer (interaction
+                           or final-only); normally exactly one when an answer exists.
+      final_only_turns   — dedicated final-answer-only turns (128-token cap).
+    """
     input_total = 0
     output_total = 0
     missing: list[int] = []
     invalid: list[dict] = []
-    final_turns: list[int] = []
+    final_answer_turns: list[int] = []
+    final_only_turns: list[int] = []
 
     for turn in turns:
         index = turn["turn_index"]
-        if turn["is_final"]:
-            final_turns.append(index)
+        if turn["produced_final_answer"]:
+            final_answer_turns.append(index)
+        if turn["is_final_answer_turn"]:
+            final_only_turns.append(index)
         pair = {}
         for field in ("input_tokens", "output_tokens"):
             value = turn.get(field)
@@ -100,7 +122,8 @@ def summarize_turn_usage(turns: list[dict]) -> dict:
         "output_tokens": output_total if not (missing or invalid) else None,
         "missing_usage_turns": missing,
         "invalid_usage": invalid,
-        "final_answer_turns": final_turns,
+        "final_answer_turns": final_answer_turns,
+        "final_only_turns": final_only_turns,
         "max_feedback_chars": max(
             (len(t["feedback"]) for t in turns if isinstance(t.get("feedback"), str)),
             default=0,

@@ -18,7 +18,9 @@
 | 真实 episode / turns / manifest 样例 | A | 字段说明与一份可解析样本；C 用它做 turns 适配层的一次映射 |
 | 在线答案隔离证据 | A | 参考答案与任务定义未进入模型输入/代码环境的证据 |
 | 固定版本离线参考答案导出 | A（源数据）+ C（校验） | 27 个 EVAL 任务的 `task_id` / `answer_type` / `reference`，只进离线文件 |
-| 四条件冻结包 | B | `configs/frozen/`、`configs/conditions/`、A/B/C/D 配置与 hash、课程附件 hash、模型/tokenizer revision、冻结时间与已知限制 |
+| 四条件冻结包 | B | `configs/frozen/`、`configs/conditions/`、**每个条件各自的 config hash**（A/B/C/D 允许不同，审计按条件核对）、课程附件 hash、模型/tokenizer revision、冻结时间与已知限制 |
+| 正式版本三元组 | A + B | code commit、model revision、每条件 config hash；正式审计缺任一项即 FAIL，不能跳过仍宣称通过 |
+| turns 字段语义确认 | A | 确认 `produced_final_answer`（交互轮可产出 Answer）与 `is_final_answer_turn`（128 上限的 final-only 轮）对应 A 的实际字段名 |
 | `frozen_run.md` | B | 四条件明确命令；C 不虚构 `run_eval.py` 之类命令 |
 | DEV 候选与选择记录 | B | 最多三个候选的选择依据，确认 EVAL 不参与调参 |
 | DEV 结果索引与资源账目 | A、B 各自 | C 只汇总，不清理或重跑他们的 DEV |
@@ -26,7 +28,7 @@
 
 ## 3. 正式执行顺序（到齐后）
 
-1. 校验 freeze commit、配置 hash、环境与课程设置；建立 108 个唯一 task-condition 槽位的执行索引。
+1. 校验 freeze commit、每条件 config hash、code commit、model revision、环境与课程设置；建立 108 个唯一 task-condition 槽位的执行索引。
 2. 用已有真实 DEV 日志做读取器健康检查。
 3. 按 `frozen_run.md` 的命令运行 EVAL；原始日志先落盘，再离线评分与审计。答错、无答案、超时、预算耗尽都保留，不重跑到成功。
 4. 基础设施故障导致有效尝试无法完成时，保留故障记录并按预先写明的恢复规则处理；方法/runner 修复需记录新 commit/config 与受影响范围。

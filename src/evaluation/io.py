@@ -9,6 +9,7 @@ Rules enforced here:
 
 from __future__ import annotations
 
+import hashlib
 import json
 from dataclasses import dataclass
 from pathlib import Path
@@ -18,6 +19,31 @@ from .errors import DataError, InputError, SyntheticNotAllowed
 from .scoring import SUPPORTED_ANSWER_TYPES
 
 _EPISODE_MARKERS = ("task_id", "condition", "final_answer", "status")
+
+# Fields that identify the offline input.  The same subset survives scoring
+# (score.py copies episode fields and only adds success/scoring_reason), so the
+# audit can fingerprint episodes and summarize.py can fingerprint scored records
+# and compare them without relying on any timestamp or absolute path.
+FINGERPRINT_FIELDS = (
+    "task_id", "split", "condition", "run_id", "config_sha256",
+    "final_answer", "termination_reason", "input_tokens", "output_tokens",
+    "model_calls",
+)
+
+
+def episode_fingerprint(records: list[dict]) -> str:
+    """Deterministic SHA-256 over the identity-relevant fields of a record set."""
+    digest = hashlib.sha256()
+    ordered = sorted(
+        records,
+        key=lambda r: (str(r.get("task_id")), str(r.get("condition")),
+                       str(r.get("run_id")), str(r.get("config_sha256"))),
+    )
+    for record in ordered:
+        subset = {field: record.get(field) for field in FINGERPRINT_FIELDS}
+        digest.update(json.dumps(subset, ensure_ascii=False, sort_keys=True).encode("utf-8"))
+        digest.update(b"\n")
+    return digest.hexdigest()
 
 
 @dataclass
