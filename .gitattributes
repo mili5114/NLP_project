@@ -15,3 +15,7 @@
 *.pdf     binary
 *.docx    binary
 *.safetensors binary
+
+# 课程原始文件：必须逐字节一致（source_hashes.json 校验的是字节），
+# 任何换行转换都会让 SHA256 对不上，所以完全禁用 text 处理。
+configs/course/*  -text
