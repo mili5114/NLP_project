@@ -326,6 +326,60 @@ def run_episode(
     }
 
 
+def _record_platform_error(
+    *,
+    runs_root: str,
+    split: str,
+    condition: str,
+    task_id: str,
+    run_id: str,
+    exc: BaseException,
+    cfg: CourseConfig,
+) -> Path:
+    """单题平台异常也要落一条 episode，否则 C 汇总时数量对不上且看不出原因。"""
+    from ..records.writer import EpisodeWriter
+
+    writer = EpisodeWriter(
+        Path(runs_root),
+        run_id=run_id,
+        slug=safe_slug(f"{task_id}__{run_id}"),
+        split=split,
+        condition=condition,
+        manifest={
+            "run_id": run_id,
+            "split": split,
+            "condition": condition,
+            "task_id": task_id,
+            "tasks": [task_id],
+            "model": cfg.model,
+            "upstream_commit": cfg.code_commit,
+            "team_commit": _git_head(),
+            "course_hashes": cfg.hashes,
+            "aborted": True,
+        },
+    )
+    writer.open()
+    return writer.close(
+        {
+            "run_id": run_id,
+            "synthetic": False,
+            "task_id": task_id,
+            "split": split,
+            "condition": condition,
+            "status": "error",
+            "termination_reason": "platform_error",
+            "final_answer": None,
+            "input_tokens": 0,
+            "output_tokens": 0,
+            "model_calls": 0,
+            "tool_attempts_executed": 0,
+            "tool_attempts_blocked": 0,
+            "config_sha256": cfg.hashes.get("runtime_settings.json"),
+            "error": f"{type(exc).__name__}: {exc}",
+        }
+    )
+
+
 def main(argv: list[str] | None = None) -> int:
     import argparse
     import json
@@ -356,16 +410,37 @@ def main(argv: list[str] | None = None) -> int:
         stop_text=cfg.stop_text,
     )
 
+    failures = 0
     for i, task_id in enumerate(tasks, 1):
         print(f"[{i}/{len(tasks)}] {args.condition} :: {task_id}", flush=True)
-        result = run_episode(
-            task_id=task_id,
-            condition=args.condition,
-            cfg=cfg,
-            backend=backend,
-            runs_root=args.runs_root,
-            split=args.split,
-        )
+        run_id = f"{args.split}-{args.condition}-{safe_slug(task_id)}-s{int(cfg.model['seed'])}"
+        try:
+            result = run_episode(
+                task_id=task_id,
+                condition=args.condition,
+                cfg=cfg,
+                backend=backend,
+                runs_root=args.runs_root,
+                split=args.split,
+                run_id=run_id,
+            )
+        except BaseException as exc:  # noqa: BLE001 - 单题失败不能停掉整批
+            failures += 1
+            import traceback
+
+            traceback.print_exc()
+            path = _record_platform_error(
+                runs_root=args.runs_root,
+                split=args.split,
+                condition=args.condition,
+                task_id=task_id,
+                run_id=run_id,
+                exc=exc,
+                cfg=cfg,
+            )
+            print(f"    !! platform_error -> {path}", flush=True)
+            continue
+
         ep = result["episode"]
         print(
             f"    -> {ep['status']} / {ep['termination_reason']} "
@@ -374,6 +449,9 @@ def main(argv: list[str] | None = None) -> int:
             flush=True,
         )
         print("    " + json.dumps(ep, ensure_ascii=False), flush=True)
+
+    if failures:
+        print(f"platform_errors={failures}/{len(tasks)}", flush=True)
 
     peak = backend.peak_memory_gb()
     if peak is not None:
