@@ -26,8 +26,6 @@ class BlockExecutor:
         self.shell = InteractiveShell(
             user_ns=dict(user_ns),
             colors="NoColor",
-            history_length=0,
-            cache_size=0,
         )
         # 同上：包装后的工具函数在 dict 里，浅拷贝即可共享引用
         self.shell.user_ns.update(user_ns)
