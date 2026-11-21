@@ -11,6 +11,9 @@ models/
 hf_cache/
 .cache/
 
+# Slurm 作业日志（原始 stdout/stderr 留集群；需要留证的归档到 runs/）
+logs/
+
 # 大型原始日志按索引管理，见 artifacts/README.md
 artifacts/**
 !artifacts/README.md

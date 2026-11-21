@@ -1,15 +1,19 @@
 #!/usr/bin/env bash
 #SBATCH --job-name=a-sibei-smoke
-#SBATCH --partition=i64m1tga800u
-#SBATCH --gres=gpu:a800:1
+#SBATCH --partition=debug
+#SBATCH --gres=gpu:a40:1
 #SBATCH --cpus-per-task=8
 #SBATCH --mem=64G
-#SBATCH --time=00:30:00
+#SBATCH --time=00:20:00
 #SBATCH --output=logs/smoke-%j.out
 #SBATCH --error=logs/smoke-%j.err
 
 # 冒烟测试：验证 conda 环境、依赖版本、模型加载、贪心生成、EOS 行为。
 # 提交：sbatch scripts/env/smoke.sbatch
+#
+# 为什么用 debug/A40 而不是 A800 分区：冒烟只需单卡 8.5 GB 显存，
+# A800 分区常排 30 小时以上，而 debug 分区分钟级就能拿到 A40。
+# 正式实验（需要长时间连续跑）才用 gpu_job.sbatch 的 A800 分区。
 set -euo pipefail
 
 cd "${SLURM_SUBMIT_DIR:-$HOME/codeact-work}"

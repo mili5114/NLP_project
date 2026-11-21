@@ -1,13 +1,13 @@
 # 环境与运行说明（A 维护）
 
-> 最后更新：2026-11-21。状态：集群已探明、脚本已就绪，尚未在 GPU 节点上跑过任何任务。
+> 最后更新：2026-11-21。状态：集群已探明、环境已在 GPU 节点验证通过（job 14051595，全部通过）。
 > 本文件记录**实测到的事实**与**待确认项**，不含凭据；账号密码只在教师邮件与本地密码管理器里。
 
 ## 1. 集群事实（实测）
 
 | 项目 | 实测值 | 备注 |
 |---|---|---|
-| 登录入口 | `10.120.18.63`（`mgmt-3`） | 本机直连 22 端口可达；`10.120.18.240`（`login.hpc…`）从校外网络超时 |
+| 登录入口 | `ssh aiaa4051_038@hpc2login.hpc.hkust-gz.edu.cn`（= `10.120.18.63`，`mgmt-3`） | 已确认：学校文档中 Phase II 的正式登录地址就是它；`10.120.18.240`（`login.hpc…`）从校外超时 |
 | Slurm 集群名 | `hkuhpc-ai` | 控制节点 `10.120.18.242` |
 | GPU 节点 | `gpu1-1` … | `Gres=gpu:a800:8`，**每节点 8 张 A800**，64 核 / 503 GB 内存 |
 | GPU 分区 | `i64m1tga800u`（A800）、`i64m1tga40u`（A40） | 单作业最长 7 天；另有 `long_gpu`（14 天）、`debug`（30 分钟）、`emergency_gpu` |
@@ -21,8 +21,12 @@
 ### 2.1 登录
 
 ```bash
-ssh aiaa4051_038@10.120.18.63
+ssh aiaa4051_038@hpc2login.hpc.hkust-gz.edu.cn
 ```
+
+**首次使用必须先改初始密码**：初始密码在 SSH 上会被直接拒绝（客户端只看到
+`Permission denied (password)`，服务器没有开 keyboard-interactive，所以不会提示原因），
+但可以用它登录门户 `https://hpc2login.hpc.hkust-gz.edu.cn` 改密。改完 SSH 立即可用。
 
 建议配置免密（不要提交私钥到仓库）：
 
@@ -61,15 +65,21 @@ HuggingFace 官方 `lfs.sha256` 比对；两个分片的哈希已实测一致，
 ### 2.4 冒烟测试（拿一张卡，约 5 分钟）
 
 ```bash
-sbatch scripts/env/smoke.sbatch
+sbatch scripts/env/smoke.sbatch          # 走 debug 分区拿 A40，分钟级
 squeue -u $USER
-cat logs/smoke-*.out        # 期望：venv 版本表 + 1 次贪心生成的 token 数
+cat logs/smoke-*.out
 ```
+
+**已通过**（job `14051595`，节点 `gpu3-9`，2026-11-21 16:36）：Python 3.10.22、六个版本逐一
+命中、`torch.cuda.is_available()`、类名 `Qwen3_5ForConditionalGeneration`、贪心生成正常，
+峰值显存 8.53 GB。原始输出归档在 `runs/smoke/14051595.out`，实测环境写入
+`configs/versions.json`。
 
 `scripts/env/check_env.py` 会断言：Python 3.10、六个版本号、CUDA 可用、类名
 `Qwen3_5ForConditionalGeneration` 是否真实存在（不存在则回退 `AutoModelForCausalLM`
 并明确报告）、`do_sample=False`、`enable_thinking=False`、EOS 248044/248046。
-输出同时写入 `configs/versions.json`（由脚本生成，不手填）。
+
+> 4B 模型用 47 GB 的 A40 就够（峰值 8.53 GB），冒烟不必占 A800，能省 30 小时排队。
 
 ## 3. 运行正式实验
 
@@ -96,10 +106,11 @@ runner 入口在 `src/runtime/`，接口见 `docs/interfaces.md`。
 4. **共享账号**：`squeue` 能看到全班作业，别人也能看到你的。作业名统一 `a-sibei-<用途>`，`runs/` 下每个 run 带 `sibei/` 前缀，避免互相覆盖。
 5. **`sinfo`/`scontrol` 在 mgmt-3 上要带 `-M hkuhpc-ai`**，否则报 `unable to status file /etc/slurm-llnl/slurm.conf`。
 6. **家目录剩余量**：文件系统整体已用 94%，权重和日志别堆在 `~`，优先 `/hpc2hdd/home/$USER/models`。
+7. **初始密码必须先改**：见 §2.1。这个坑的迷惑之处是 SSH 只回 `Authentication failed`，和密码错误完全一样；判定方法是拿同一串密码去门户登录——门户能进就是"待改密"，门户也进不去才是密码错。
 
 ## 6. 待确认
 
-- [ ] 教师指定的正式登录地址是 `10.120.18.63` 还是别的（`login.hpc…` 校外不可达）。
+- [x] ~~教师指定的正式登录地址~~ → 已确认 `hpc2login.hpc.hkust-gz.edu.cn`（10.120.18.63）。
 - [ ] 单作业申请 GPU 是否需要显式 `--qos=gpu16`，还是账号默认 QOS 就够。
 - [ ] 课程 100 GPU-hours 如何计量（作业时长 × 卡数，还是 Slurm TRES 累计），谁负责汇总。
 - [ ] 是否能申请到 `long_gpu` 分区（14 天），用于 32 条 DEV 的一次性长跑。
