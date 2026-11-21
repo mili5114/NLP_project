@@ -10,9 +10,9 @@ REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 echo "==> [1/4] 加载 conda"
 if ! command -v conda >/dev/null 2>&1; then
     module load anaconda3
-    # shellcheck disable=SC1091
-    source "$(conda info --base)/etc/profile.d/conda.sh"
 fi
+# shellcheck disable=SC1091
+source "$(conda info --base)/etc/profile.d/conda.sh"   # 提供 conda activate
 conda --version
 
 echo "==> [2/4] 创建/复用环境 ${ENV_NAME} (python ${PY_VER})"
