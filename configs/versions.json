@@ -1,0 +1,20 @@
+{
+  "_status": "pending",
+  "_note": "此文件由 scripts/env/check_env.py 在集群上一次成功冒烟后生成，不要手填实验结果。当前只有课程固定值。",
+  "upstream_code_commit": "d607f56c9cfe9e8632ebaf65dcaf2b4b7fe1c6f8",
+  "model": {
+    "repo_id": "Qwen/Qwen3.5-4B",
+    "revision": "851bf6e806efd8d0a36b00ddf55e13ccb7b8cd0a",
+    "dtype": "bfloat16",
+    "backend": "transformers"
+  },
+  "decoding": {
+    "do_sample": false,
+    "enable_thinking": false,
+    "eos_token_ids": [248044, 248046],
+    "stop_text": "End Action"
+  },
+  "runtime": null,
+  "gpu": null,
+  "packages": null
+}

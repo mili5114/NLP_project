@@ -1,0 +1,28 @@
+# Python
+__pycache__/
+*.py[cod]
+.ipynb_checkpoints/
+.venv/
+venv/
+.env
+
+# 模型与缓存（权重不入库）
+models/
+hf_cache/
+.cache/
+
+# 大型原始日志按索引管理，见 artifacts/README.md
+artifacts/**
+!artifacts/README.md
+!artifacts/.gitkeep
+
+# 凭据
+*.pem
+id_rsa*
+credential*
+
+# 编辑器 / 系统
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
