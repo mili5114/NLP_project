@@ -1,0 +1,4 @@
+# C's offline evaluation tools (成员 C / evaluation-tools branch)
+# Core scoring, auditing and aggregation use only the Python 3.10+ standard library.
+# matplotlib is needed only for scripts/plot_results.py.
+matplotlib>=3.5,<4

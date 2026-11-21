@@ -31,6 +31,7 @@ condition 只取 `A/B/C/D`。settings 从课程 runtime_settings 与方法配置
 
 - `manifest.json`：schema_version、run_id、split、condition、seed、模型/tokenizer revision、上游和团队代码版本、配置 hash、附件 hash、后端/依赖/GPU、开始结束时间和任务列表。
 - `turns.jsonl`：每行一次模型调用，包含实际 messages、生成设置、原始模型文本、解析结果、action、工具 events、Python 原始输出、模型可见反馈、feedback_metadata、真实输入/输出 tokens、耗时、预算余量。最终回答调用也写一行。
+  - C 侧澄清（待 A 确认）：需区分 `produced_final_answer`（本次调用输出即最终 Answer；可能是普通交互轮，仍按交互轮 384 上限）与 `is_final_answer_turn`（预算耗尽后追加的 final-answer-only 轮，128 上限、不执行工具）。A 的真实日志若用别的字段名，由 C 在 `src/evaluation/turns_reader.py` 做一次显式映射。
 - `episode.json`：schema_version、synthetic、run_id、task_id、split、condition、status、termination_reason、final_answer、input_tokens、output_tokens、model_calls、tool_attempts_executed、tool_attempts_blocked、wall_seconds、trajectory_path、config_sha256。
 
 在线记录没有 reference_answer/success。无答案时 final_answer 为 null，仍保留 episode。配置 hash、版本和真实 token 统计必须来自实际运行，不能把 fixture 的数字复制到正式记录。

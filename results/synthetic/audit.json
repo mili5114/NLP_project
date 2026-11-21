@@ -1,0 +1,91 @@
+{
+  "complete": true,
+  "condition_mismatch_slots": [],
+  "conditions": [
+    "A",
+    "B",
+    "C",
+    "D"
+  ],
+  "config_by_condition": {
+    "A": [
+      "synthetic-config-A-sha"
+    ],
+    "B": [
+      "synthetic-config-B-sha"
+    ],
+    "C": [
+      "synthetic-config-C-sha"
+    ],
+    "D": [
+      "synthetic-config-D-sha"
+    ]
+  },
+  "duplicate_slots": [],
+  "errors": [],
+  "expected_slot_count": 12,
+  "expected_slots": [
+    "synthetic/task_alpha|A",
+    "synthetic/task_alpha|B",
+    "synthetic/task_alpha|C",
+    "synthetic/task_alpha|D",
+    "synthetic/task_beta|A",
+    "synthetic/task_beta|B",
+    "synthetic/task_beta|C",
+    "synthetic/task_beta|D",
+    "synthetic/task_gamma|A",
+    "synthetic/task_gamma|B",
+    "synthetic/task_gamma|C",
+    "synthetic/task_gamma|D"
+  ],
+  "expected_task_count": 3,
+  "final_answer_semantics": "produced_final_answer marks the call whose output is the final Answer (interaction turn, 384 cap); is_final_answer_turn marks the dedicated final-only turn after budget exhaustion (128 cap, no tools). Pending A's real turns schema; map fields once in turns_reader.",
+  "formal_version_checks": false,
+  "input_fingerprint": "c0d5b972b1918e94f2464929934ff4b467db23f8ba4acba4d3f5f501177f7a37",
+  "missing_slots": [],
+  "mode": "synthetic",
+  "owner_hints": {
+    "A": "trajectory_path, turns.jsonl fields, token usage, versions in manifest/episode",
+    "B": "condition config, frozen commit/config_sha256, method-side feedback metadata",
+    "C": "reference file, explicit synthetic expectation set, offline aggregation"
+  },
+  "recorded_failures": [
+    {
+      "has_answer": false,
+      "slot": "synthetic/task_beta|A",
+      "status": "finished",
+      "termination_reason": "no_answer"
+    },
+    {
+      "has_answer": false,
+      "slot": "synthetic/task_gamma|C",
+      "status": "finished",
+      "termination_reason": "budget_exhausted"
+    }
+  ],
+  "recorded_slot_count": 12,
+  "recorded_slots": [
+    "synthetic/task_alpha|A",
+    "synthetic/task_alpha|B",
+    "synthetic/task_alpha|C",
+    "synthetic/task_alpha|D",
+    "synthetic/task_beta|A",
+    "synthetic/task_beta|B",
+    "synthetic/task_beta|C",
+    "synthetic/task_beta|D",
+    "synthetic/task_gamma|A",
+    "synthetic/task_gamma|B",
+    "synthetic/task_gamma|C",
+    "synthetic/task_gamma|D"
+  ],
+  "run_ids": [
+    "synthetic-e2e"
+  ],
+  "split": "SYNTHETIC",
+  "status": "PASS",
+  "synthetic": true,
+  "unknown_task_slots": [],
+  "unverifiable": [],
+  "warnings": [],
+  "wrong_split_slots": []
+}

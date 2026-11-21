@@ -1,31 +1,69 @@
-# Python
-__pycache__/
-*.py[cod]
-.ipynb_checkpoints/
+# Python environments, caches and build artifacts
 .venv/
 venv/
-.env
+env/
+ENV/
+*.venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.ipynb_checkpoints/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+build/
+dist/
 
-# 模型与缓存（权重不入库）
+# Models and download caches
 models/
+checkpoints/
 hf_cache/
 .cache/
+*.safetensors
+*.bin
+*.pt
+*.pth
+*.ckpt
+*.gguf
 
-# Slurm 作业日志（原始 stdout/stderr 留集群；需要留证的归档到 runs/）
+# Credentials and private offline answer keys
+.env
+.env.*
+*.pem
+*.key
+id_rsa*
+credential*
+secrets*.json
+configs/offline_answers/
+*reference*.private.json
+
+# Raw logs stay local or on the cluster; archive locations in artifacts/README.md
 logs/
+raw_logs/
+*.log
+*.jsonl.raw
+/runs/**
+# Allow small, explicitly reviewed smoke evidence and DEV directory placeholders.
+!/runs/smoke/
+!/runs/smoke/*.out
+!/runs/dev_baselines/
+!/runs/dev_baselines/.gitkeep
 
-# 大型原始日志按索引管理，见 artifacts/README.md
+# Large artifacts: keep only the archive index and placeholder
 artifacts/**
 !artifacts/README.md
 !artifacts/.gitkeep
 
-# 凭据
-*.pem
-id_rsa*
-credential*
+# Generated results: retain the explicitly marked synthetic demonstration
+results/*
+!results/synthetic/
+!results/synthetic/**
 
-# 编辑器 / 系统
+# OS and editors
 .DS_Store
 Thumbs.db
-.vscode/
+*.swp
 .idea/
+.vscode/
