@@ -1,0 +1,22 @@
+{
+  "note": "SYNTHETIC — NOT EXPERIMENTAL RESULTS. Never pass into runtime or feedback.",
+  "offline_only": true,
+  "references": [
+    {
+      "answer_type": "numeric",
+      "reference": "42",
+      "task_id": "synthetic/task_alpha"
+    },
+    {
+      "answer_type": "string",
+      "reference": "paris",
+      "task_id": "synthetic/task_beta"
+    },
+    {
+      "answer_type": "numeric",
+      "reference": "100",
+      "task_id": "synthetic/task_gamma"
+    }
+  ],
+  "synthetic": true
+}

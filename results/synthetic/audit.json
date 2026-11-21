@@ -1,0 +1,71 @@
+{
+  "complete": true,
+  "condition_mismatch_slots": [],
+  "conditions": [
+    "A",
+    "B",
+    "C",
+    "D"
+  ],
+  "duplicate_slots": [],
+  "errors": [],
+  "expected_slot_count": 12,
+  "expected_slots": [
+    "synthetic/task_alpha|A",
+    "synthetic/task_alpha|B",
+    "synthetic/task_alpha|C",
+    "synthetic/task_alpha|D",
+    "synthetic/task_beta|A",
+    "synthetic/task_beta|B",
+    "synthetic/task_beta|C",
+    "synthetic/task_beta|D",
+    "synthetic/task_gamma|A",
+    "synthetic/task_gamma|B",
+    "synthetic/task_gamma|C",
+    "synthetic/task_gamma|D"
+  ],
+  "expected_task_count": 3,
+  "missing_slots": [],
+  "mode": "synthetic",
+  "owner_hints": {
+    "A": "trajectory_path, turns.jsonl fields, token usage, versions in manifest/episode",
+    "B": "condition config, frozen commit/config_sha256, method-side feedback metadata",
+    "C": "reference file, explicit synthetic expectation set, offline aggregation"
+  },
+  "recorded_failures": [
+    {
+      "has_answer": false,
+      "slot": "synthetic/task_beta|A",
+      "status": "finished",
+      "termination_reason": "no_answer"
+    },
+    {
+      "has_answer": false,
+      "slot": "synthetic/task_gamma|C",
+      "status": "finished",
+      "termination_reason": "budget_exhausted"
+    }
+  ],
+  "recorded_slot_count": 12,
+  "recorded_slots": [
+    "synthetic/task_alpha|A",
+    "synthetic/task_alpha|B",
+    "synthetic/task_alpha|C",
+    "synthetic/task_alpha|D",
+    "synthetic/task_beta|A",
+    "synthetic/task_beta|B",
+    "synthetic/task_beta|C",
+    "synthetic/task_beta|D",
+    "synthetic/task_gamma|A",
+    "synthetic/task_gamma|B",
+    "synthetic/task_gamma|C",
+    "synthetic/task_gamma|D"
+  ],
+  "split": "SYNTHETIC",
+  "status": "PASS",
+  "synthetic": true,
+  "unknown_task_slots": [],
+  "unverifiable": [],
+  "warnings": [],
+  "wrong_split_slots": []
+}

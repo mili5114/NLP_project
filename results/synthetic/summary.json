@@ -1,0 +1,191 @@
+{
+  "N_recorded": 12,
+  "audit_errors": 0,
+  "audit_status": "PASS",
+  "audit_warnings": 0,
+  "banner": "SYNTHETIC — NOT EXPERIMENTAL RESULTS",
+  "complete": true,
+  "condition_summary": [
+    {
+      "N_expected": 3,
+      "N_recorded": 3,
+      "N_scored": 3,
+      "banner": "SYNTHETIC — NOT EXPERIMENTAL RESULTS",
+      "condition": "A",
+      "mean_input_tokens": 220.0,
+      "mean_model_calls": 2.0,
+      "mean_output_tokens": 15.0,
+      "mean_wall_seconds": 1.0,
+      "missing_slots": 0,
+      "n_with_output_usage": 3,
+      "n_with_usage": 3,
+      "status": "COMPLETE",
+      "success_count": 2,
+      "success_rate": 0.6667
+    },
+    {
+      "N_expected": 3,
+      "N_recorded": 3,
+      "N_scored": 3,
+      "banner": "SYNTHETIC — NOT EXPERIMENTAL RESULTS",
+      "condition": "B",
+      "mean_input_tokens": 240.0,
+      "mean_model_calls": 2.0,
+      "mean_output_tokens": 18.0,
+      "mean_wall_seconds": 1.2,
+      "missing_slots": 0,
+      "n_with_output_usage": 3,
+      "n_with_usage": 3,
+      "status": "COMPLETE",
+      "success_count": 1,
+      "success_rate": 0.3333
+    },
+    {
+      "N_expected": 3,
+      "N_recorded": 3,
+      "N_scored": 3,
+      "banner": "SYNTHETIC — NOT EXPERIMENTAL RESULTS",
+      "condition": "C",
+      "mean_input_tokens": 200.0,
+      "mean_model_calls": 2.0,
+      "mean_output_tokens": 13.0,
+      "mean_wall_seconds": 0.9,
+      "missing_slots": 0,
+      "n_with_output_usage": 3,
+      "n_with_usage": 3,
+      "status": "COMPLETE",
+      "success_count": 2,
+      "success_rate": 0.6667
+    },
+    {
+      "N_expected": 3,
+      "N_recorded": 3,
+      "N_scored": 3,
+      "banner": "SYNTHETIC — NOT EXPERIMENTAL RESULTS",
+      "condition": "D",
+      "mean_input_tokens": 210.0,
+      "mean_model_calls": 2.0,
+      "mean_output_tokens": 16.0,
+      "mean_wall_seconds": 1.1,
+      "missing_slots": 0,
+      "n_with_output_usage": 3,
+      "n_with_usage": 3,
+      "status": "COMPLETE",
+      "success_count": 1,
+      "success_rate": 0.3333
+    }
+  ],
+  "conditions": [
+    "A",
+    "B",
+    "C",
+    "D"
+  ],
+  "expected_slot_count": 12,
+  "expected_tasks": [
+    "synthetic/task_alpha",
+    "synthetic/task_beta",
+    "synthetic/task_gamma"
+  ],
+  "note": "Token means sum all model calls per task first, then average over tasks. Missing usage is excluded, never filled with 0. Failures stay in the denominator.",
+  "paired": {
+    "C_vs_B": {
+      "banner": "SYNTHETIC — NOT EXPERIMENTAL RESULTS",
+      "base": "C",
+      "counts": {
+        "base_only": 1,
+        "both_fail": 1,
+        "both_success": 1,
+        "missing_base": 0,
+        "missing_target": 0,
+        "target_only": 0
+      },
+      "interpretation": "C vs B changes BOTH information organization/ordering AND filtering; do NOT attribute the whole effect to filtering. Use C vs D for that.",
+      "rows": [
+        {
+          "base_success": true,
+          "input_tokens_delta": 40,
+          "outcome": "base_only",
+          "output_tokens_delta": 5,
+          "target_success": false,
+          "task_id": "synthetic/task_alpha"
+        },
+        {
+          "base_success": true,
+          "input_tokens_delta": 40,
+          "outcome": "both_success",
+          "output_tokens_delta": 5,
+          "target_success": true,
+          "task_id": "synthetic/task_beta"
+        },
+        {
+          "base_success": false,
+          "input_tokens_delta": 40,
+          "outcome": "both_fail",
+          "output_tokens_delta": 5,
+          "target_success": false,
+          "task_id": "synthetic/task_gamma"
+        }
+      ],
+      "status": "COMPLETE",
+      "target": "B"
+    },
+    "C_vs_D": {
+      "banner": "SYNTHETIC — NOT EXPERIMENTAL RESULTS",
+      "base": "C",
+      "counts": {
+        "base_only": 2,
+        "both_fail": 0,
+        "both_success": 0,
+        "missing_base": 0,
+        "missing_target": 0,
+        "target_only": 1
+      },
+      "interpretation": "C vs D holds format, order and budget fixed and changes only the filtering rule; differences are attributable to filtering.",
+      "rows": [
+        {
+          "base_success": true,
+          "input_tokens_delta": 10,
+          "outcome": "base_only",
+          "output_tokens_delta": 3,
+          "target_success": false,
+          "task_id": "synthetic/task_alpha"
+        },
+        {
+          "base_success": true,
+          "input_tokens_delta": 10,
+          "outcome": "base_only",
+          "output_tokens_delta": 3,
+          "target_success": false,
+          "task_id": "synthetic/task_beta"
+        },
+        {
+          "base_success": false,
+          "input_tokens_delta": 10,
+          "outcome": "target_only",
+          "output_tokens_delta": 3,
+          "target_success": true,
+          "task_id": "synthetic/task_gamma"
+        }
+      ],
+      "status": "COMPLETE",
+      "target": "D"
+    }
+  },
+  "recorded_failures": [
+    {
+      "has_answer": false,
+      "slot": "synthetic/task_beta|A",
+      "status": "finished",
+      "termination_reason": "no_answer"
+    },
+    {
+      "has_answer": false,
+      "slot": "synthetic/task_gamma|C",
+      "status": "finished",
+      "termination_reason": "budget_exhausted"
+    }
+  ],
+  "split": "SYNTHETIC",
+  "synthetic": true
+}

@@ -1,0 +1,58 @@
+# ===== Virtual environments =====
+.venv/
+venv/
+env/
+ENV/
+*.venv/
+
+# ===== Python caches / build artifacts =====
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+build/
+dist/
+
+# ===== Models, weights, large binaries =====
+models/
+checkpoints/
+*.safetensors
+*.bin
+*.pt
+*.pth
+*.ckpt
+*.gguf
+
+# ===== Credentials / secrets =====
+.env
+.env.*
+*.pem
+*.key
+credentials*.json
+secrets*.json
+
+# ===== Raw run logs and raw offline reference data (keep locally, archive separately) =====
+runs/
+raw_logs/
+*.log
+*.jsonl.raw
+
+# ===== Reference / answer keys that must never be committed =====
+configs/offline_answers/
+*reference*.private.json
+
+# ===== Generated results: ignore by default, keep explicit synthetic demo outputs =====
+results/*
+!results/synthetic/
+!results/synthetic/**
+
+# ===== OS / editor =====
+.DS_Store
+Thumbs.db
+*.swp
+.idea/
+.vscode/

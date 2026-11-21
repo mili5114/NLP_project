@@ -1,0 +1,4 @@
+task_id,outcome,base_success,target_success,input_tokens_delta,output_tokens_delta
+synthetic/task_alpha,base_only,True,False,10,3
+synthetic/task_beta,base_only,True,False,10,3
+synthetic/task_gamma,target_only,False,True,10,3

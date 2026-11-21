@@ -1,0 +1,8 @@
+{
+  "config_sha256": "synthetic-config-sha-placeholder",
+  "note": "SYNTHETIC — NOT EXPERIMENTAL RESULTS",
+  "run_id": "synthetic-e2e",
+  "schema_version": "1.0",
+  "split": "SYNTHETIC",
+  "synthetic": true
+}

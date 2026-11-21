@@ -1,0 +1,19 @@
+{
+  "condition": "A",
+  "config_sha256": "synthetic-config-sha-placeholder",
+  "final_answer": null,
+  "input_tokens": 220,
+  "model_calls": 2,
+  "output_tokens": 15,
+  "run_id": "synthetic-e2e",
+  "schema_version": "1.0",
+  "split": "SYNTHETIC",
+  "status": "finished",
+  "synthetic": true,
+  "task_id": "synthetic/task_beta",
+  "termination_reason": "no_answer",
+  "tool_attempts_blocked": 0,
+  "tool_attempts_executed": 1,
+  "trajectory_path": "fixtures/evaluation/turns/task_beta_A.jsonl",
+  "wall_seconds": 1.0
+}
