@@ -100,10 +100,11 @@ def load_and_generate(model_dir: str, max_new_tokens: int) -> dict:
         cls_name == "Qwen3_5ForConditionalGeneration",
         f"类名 {cls_name}（期望 Qwen3_5ForConditionalGeneration）",
     )
-    tok = AutoTokenizer.from_pretrained(model_dir, revision=MODEL_REVISION)
+    tok = AutoTokenizer.from_pretrained(model_dir)
+    # 从本地目录加载，不带 revision（revision 在 fetch_model.py 下载阶段已固定并记录在
+    # versions.json 里；本地路径再传 revision 可能触发一次多余的 hub 请求）。
     model = cls.from_pretrained(
         model_dir,
-        revision=MODEL_REVISION,
         torch_dtype=torch.bfloat16,
         device_map="cuda:0",
         attn_implementation="sdpa",
