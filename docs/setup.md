@@ -43,15 +43,20 @@ bash scripts/env/setup_env.sh
 脚本做的事：`module load anaconda3` → `conda create -n codeact python=3.10` → 按
 `requirements.txt` 装课程指定版本 → 冻结完整依赖到 `configs/locks/`。
 
-### 2.3 下载模型（约 8 GB）
+### 2.3 下载模型（9.3 GB）
 
 ```bash
-export HF_ENDPOINT=https://hf-mirror.com      # 必设，集群直连 huggingface.co 不通
-python scripts/env/fetch_model.py --out /hpc2hdd/home/$USER/models
+bash scripts/env/fetch_model.sh ~/models/Qwen3.5-4B
 ```
 
-固定 `Qwen/Qwen3.5-4B`，revision `851bf6e806efd8d0a36b00ddf55e13ccb7b8cd0a`。脚本会打印
-`last_commit` 供写入 `configs/versions.json`。
+**不要用 `huggingface_hub` 直连**。实测：集群直连 `huggingface.co` 超时，`hf-mirror.com`
+只有 0.26 MB/s（9.3 GB 要 10 小时），**ModelScope 8–13 MB/s（约 15 分钟）**。
+`fetch_model.sh` 走 ModelScope，逐文件 `curl -C -` 断点续传，最后用 sha256 与
+HuggingFace 官方 `lfs.sha256` 比对；两个分片的哈希已实测一致，记录在
+`configs/model_provenance.json`。
+
+固定 `Qwen/Qwen3.5-4B`，revision `851bf6e806efd8d0a36b00ddf55e13ccb7b8cd0a`。
+`scripts/env/fetch_model.py` 保留为 HF 方案备用（镜像快的时候再用）。
 
 ### 2.4 冒烟测试（拿一张卡，约 5 分钟）
 
