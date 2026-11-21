@@ -1,14 +1,13 @@
-# ===== Virtual environments =====
+# Python environments, caches and build artifacts
 .venv/
 venv/
 env/
 ENV/
 *.venv/
-
-# ===== Python caches / build artifacts =====
 __pycache__/
 *.py[cod]
 *.egg-info/
+.ipynb_checkpoints/
 .pytest_cache/
 .mypy_cache/
 .ruff_cache/
@@ -17,9 +16,11 @@ htmlcov/
 build/
 dist/
 
-# ===== Models, weights, large binaries =====
+# Models and download caches
 models/
 checkpoints/
+hf_cache/
+.cache/
 *.safetensors
 *.bin
 *.pt
@@ -27,30 +28,40 @@ checkpoints/
 *.ckpt
 *.gguf
 
-# ===== Credentials / secrets =====
+# Credentials and private offline answer keys
 .env
 .env.*
 *.pem
 *.key
-credentials*.json
+id_rsa*
+credential*
 secrets*.json
-
-# ===== Raw run logs and raw offline reference data (keep locally, archive separately) =====
-runs/
-raw_logs/
-*.log
-*.jsonl.raw
-
-# ===== Reference / answer keys that must never be committed =====
 configs/offline_answers/
 *reference*.private.json
 
-# ===== Generated results: ignore by default, keep explicit synthetic demo outputs =====
+# Raw logs stay local or on the cluster; archive locations in artifacts/README.md
+logs/
+raw_logs/
+*.log
+*.jsonl.raw
+/runs/**
+# Allow small, explicitly reviewed smoke evidence and DEV directory placeholders.
+!/runs/smoke/
+!/runs/smoke/*.out
+!/runs/dev_baselines/
+!/runs/dev_baselines/.gitkeep
+
+# Large artifacts: keep only the archive index and placeholder
+artifacts/**
+!artifacts/README.md
+!artifacts/.gitkeep
+
+# Generated results: retain the explicitly marked synthetic demonstration
 results/*
 !results/synthetic/
 !results/synthetic/**
 
-# ===== OS / editor =====
+# OS and editors
 .DS_Store
 Thumbs.db
 *.swp

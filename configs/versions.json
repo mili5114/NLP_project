@@ -1,0 +1,54 @@
+{
+  "generated_at": "2026-11-21T08:37:37+00:00",
+  "generated_by": "scripts/env/check_env.py（集群 gpu3-9 上一次成功冒烟后自动生成，勿手改）",
+  "hostname": "gpu3-9",
+  "python": "3.10.22",
+  "packages": {
+    "torch": "2.10.0",
+    "transformers": "5.17.0",
+    "tokenizers": "0.23.2",
+    "accelerate": "1.15.0",
+    "ipython": "8.37.0",
+    "numpy": "2.2.6"
+  },
+  "upstream_code_commit": "d607f56c9cfe9e8632ebaf65dcaf2b4b7fe1c6f8",
+  "model": {
+    "repo_id": "Qwen/Qwen3.5-4B",
+    "revision": "851bf6e806efd8d0a36b00ddf55e13ccb7b8cd0a",
+    "dtype": "bfloat16",
+    "backend": "transformers",
+    "local_path": "/hpc2hdd/home/aiaa4051_038/models/Qwen3.5-4B"
+  },
+  "decoding": {
+    "do_sample": false,
+    "enable_thinking": false,
+    "eos_token_ids": [248044, 248046],
+    "stop_text": "End Action"
+  },
+  "gpu": {
+    "cuda_available": true,
+    "devices": [
+      {
+        "index": 0,
+        "name": "NVIDIA A40",
+        "total_memory_gb": 47.4,
+        "capability": "8.6"
+      }
+    ],
+    "torch_cuda": "12.8",
+    "nvidia_smi": "NVIDIA A40, 49140 MiB, 575.57.08"
+  },
+  "smoke": {
+    "job_id": "14051595",
+    "prompt_tokens": 30,
+    "generated_tokens": 2,
+    "reply": "ready",
+    "peak_gpu_mem_gb": 8.53
+  },
+  "cluster": {
+    "login": "hpc2login.hpc.hkust-gz.edu.cn (10.120.18.63, mgmt-3)",
+    "scheduler": "slurm (hkuhpc-ai)",
+    "smoke_partition": "debug / gpu:a40:1",
+    "dev_partition": "i64m1tga800u / gpu:a800:1"
+  }
+}

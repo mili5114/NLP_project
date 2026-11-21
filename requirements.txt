@@ -1,0 +1,16 @@
+# 课程附件 Assignment_Attachment.txt §1 Option 1 指定的固定版本。
+# 只锁课程点名的包；上游 m3tooleval 的间接依赖在首次安装后统一冻结（见 scripts/env/setup_env.sh）。
+torch==2.10.0
+transformers==5.17.0
+tokenizers==0.23.2
+accelerate==1.15.0
+ipython==8.37.0
+numpy==2.2.6
+
+# 上游 scripts/eval/m3tooleval 的导入依赖（main.py / tasks 需要，未在附件中指定版本）
+openai
+backoff
+requests
+pandas
+tqdm
+huggingface_hub

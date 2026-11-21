@@ -1,0 +1,21 @@
+# 统一换行符：仓库内一律 LF，避免 Windows 提交的 CRLF 让集群上的 .sh / .sbatch 报 $'\r'
+* text=auto eol=lf
+
+*.sh      text eol=lf
+*.sbatch  text eol=lf
+*.py      text eol=lf
+*.md      text eol=lf
+*.json    text eol=lf
+*.jsonl   text eol=lf
+*.txt     text eol=lf
+
+# 二进制
+*.png     binary
+*.jpg     binary
+*.pdf     binary
+*.docx    binary
+*.safetensors binary
+
+# 课程原始文件：必须逐字节一致（source_hashes.json 校验的是字节），
+# 任何换行转换都会让 SHA256 对不上，所以完全禁用 text 处理。
+configs/course/*  -text

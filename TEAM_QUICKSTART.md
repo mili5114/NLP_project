@@ -2,13 +2,13 @@
 
 > 项目：Execution Feedback and Interaction Efficiency in CodeAct Agents  
 > 课程：AIAA 4051，2026 Fall  
-> 状态：**待认领**。下面是三个完整工作包，一人认领一个，不按题目拆人。
+> 状态：A 已认领（[#1](https://github.com/mili5114/NLP_project/issues/1)）；B、C 待认领。下面是三个完整工作包，一人认领一个，不按题目拆人。
 
 ## 一眼看懂谁干什么
 
 | 角色 | 一句话 | 你交什么 | 你不做什么 | 认领人 |
 |---|---|---|---|---|
-| **A 平台与基线** | 把官方 CodeAct 在本地跑起来，产出 A/B 两个基线的 DEV 结果 | 可运行 runner、工具观察器、完整日志、16 DEV × A/B = 32 次轨迹、实验设置章节、README | 新方法设计、正式 EVAL、poster | 待填 |
+| **A 平台与基线** | 把官方 CodeAct 在本地跑起来，产出 A/B 两个基线的 DEV 结果 | 可运行 runner、工具观察器、完整日志、16 DEV × A/B = 32 次轨迹、实验设置章节、README | 新方法设计、正式 EVAL、poster | **SibeiLYU**（[#1](https://github.com/mili5114/NLP_project/issues/1)） |
 | **B 方法与冻结** | 设计 C/D 反馈策略，在 DEV 上选一个配置并冻结 | C/D 插件、最多 3 个候选的比较记录、freeze manifest、方法章、最终报告 PDF | 搭环境、重写观察器、跑 EVAL | 待填 |
 | **C 评测与展示** | 离线评分、跑全部 EVAL、做统计案例和展示材料 | scorer / 审计 / 汇总脚本、27 × 4 = 108 个结果槽位、主表图、5–10 个配对案例、poster、demo | 平台开发、方法调参 | 待填 |
 

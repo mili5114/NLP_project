@@ -1,0 +1,23 @@
+job=14051595 node=gpu3-9 date=2026-11-21T16:36:21+08:00
+NVIDIA A40, 49140 MiB, 575.57.08
+== Python ==
+  3.10.22  (Linux-5.4.0-162-generic-x86_64-with-glibc2.31)
+  [ok]   Python == 3.10
+== 固定依赖 ==
+  [ok]   torch == 2.10.0 (实测 2.10.0)
+  [ok]   transformers == 5.17.0 (实测 5.17.0)
+  [ok]   tokenizers == 0.23.2 (实测 0.23.2)
+  [ok]   accelerate == 1.15.0 (实测 1.15.0)
+  [ok]   ipython == 8.37.0 (实测 8.37.0)
+  [ok]   numpy == 2.2.6 (实测 2.2.6)
+== GPU ==
+  [ok]   torch.cuda.is_available()
+== 模型加载与贪心生成 ==
+  [ok]   类名 Qwen3_5ForConditionalGeneration（期望 Qwen3_5ForConditionalGeneration）
+  [info] 生成结果: 'ready'
+
+[ok] 已写 /hpc2hdd/home/aiaa4051_038/codeact-work/configs/versions.json
+
+== 结论 ==
+  全部通过
+exit=0

@@ -1,0 +1,36 @@
+#!/usr/bin/env bash
+#SBATCH --job-name=a-sibei-smoke
+#SBATCH --partition=debug
+#SBATCH --gres=gpu:a40:1
+#SBATCH --cpus-per-task=8
+#SBATCH --mem=64G
+#SBATCH --time=00:20:00
+#SBATCH --output=logs/smoke-%j.out
+#SBATCH --error=logs/smoke-%j.err
+
+# 冒烟测试：验证 conda 环境、依赖版本、模型加载、贪心生成、EOS 行为。
+# 提交：sbatch scripts/env/smoke.sbatch
+#
+# 为什么用 debug/A40 而不是 A800 分区：冒烟只需单卡 8.5 GB 显存，
+# A800 分区常排 30 小时以上，而 debug 分区分钟级就能拿到 A40。
+# 正式实验（需要长时间连续跑）才用 gpu_job.sbatch 的 A800 分区。
+set -euo pipefail
+
+cd "${SLURM_SUBMIT_DIR:-$HOME/codeact-work}"
+mkdir -p logs
+
+module load anaconda3
+# shellcheck disable=SC1091
+source "$(conda info --base)/etc/profile.d/conda.sh"
+conda activate codeact
+
+export HF_ENDPOINT=https://hf-mirror.com
+export TOKENIZERS_PARALLELISM=false
+export HF_HUB_OFFLINE=1
+export MODEL_DIR="${MODEL_DIR:-$HOME/models/Qwen3.5-4B}"
+
+echo "job=$SLURM_JOB_ID node=$(hostname) date=$(date -Is)"
+nvidia-smi --query-gpu=name,memory.total,driver_version --format=csv,noheader
+
+python scripts/env/check_env.py --model-dir "$MODEL_DIR" --write configs/versions.json
+echo "exit=$?"
