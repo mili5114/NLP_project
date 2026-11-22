@@ -1,0 +1,19 @@
+{
+  "schema_version": "1",
+  "trajectory_path": "runs/dev_baselines/DEV/A/travel_itinerary_planning_cheapest_new_york_trip_DEV-A-travel_itinerary_planning_cheapest_new_york_trip-s4051/turns.jsonl",
+  "wall_seconds": 205.106,
+  "run_id": "DEV-A-travel_itinerary_planning_cheapest_new_york_trip-s4051",
+  "synthetic": false,
+  "task_id": "travel_itinerary_planning/cheapest_new_york_trip",
+  "split": "DEV",
+  "condition": "A",
+  "status": "timeout",
+  "termination_reason": "task_timeout",
+  "final_answer": null,
+  "input_tokens": 1808,
+  "output_tokens": 266,
+  "model_calls": 2,
+  "tool_attempts_executed": 3,
+  "tool_attempts_blocked": 0,
+  "config_sha256": "faa79929e12987fd301e07cb81d61e4b6ac4b87d4afce32de9b71229997dfdd1"
+}

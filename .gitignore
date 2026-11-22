@@ -67,3 +67,6 @@ Thumbs.db
 *.swp
 .idea/
 .vscode/
+
+# 试跑数据只入库一份带注记的副本，其余本地产物不入库
+!runs/dev_baselines/DEV/A/pilot_14051965/
