@@ -1,0 +1,19 @@
+{
+  "schema_version": "1",
+  "trajectory_path": "runs/dev_baselines/DEV/A/travel_itinerary_planning_new_york_trip_with_specific_preferences_DEV-A-travel_itinerary_planning_new_york_trip_with_spe/turns.jsonl",
+  "wall_seconds": 23.902,
+  "run_id": "DEV-A-travel_itinerary_planning_new_york_trip_with_specific_preferences-s4051",
+  "synthetic": false,
+  "task_id": "travel_itinerary_planning/new_york_trip_with_specific_preferences",
+  "split": "DEV",
+  "condition": "A",
+  "status": "completed",
+  "termination_reason": "answer",
+  "final_answer": "615",
+  "input_tokens": 6053,
+  "output_tokens": 568,
+  "model_calls": 5,
+  "tool_attempts_executed": 6,
+  "tool_attempts_blocked": 0,
+  "config_sha256": "faa79929e12987fd301e07cb81d61e4b6ac4b87d4afce32de9b71229997dfdd1"
+}

@@ -1,0 +1,19 @@
+{
+  "schema_version": "1",
+  "trajectory_path": "runs/eval_baselines/EVAL/B/trade_calculator_optimal_trade_route_multiple_commodities_EVAL-B-trade_calculator_optimal_trade_route_multiple_commoditi/turns.jsonl",
+  "wall_seconds": 53.183,
+  "run_id": "EVAL-B-trade_calculator_optimal_trade_route_multiple_commodities-s4051",
+  "synthetic": false,
+  "task_id": "trade_calculator/optimal_trade_route_multiple_commodities",
+  "split": "EVAL",
+  "condition": "B",
+  "status": "completed",
+  "termination_reason": "answer",
+  "final_answer": "118125.0",
+  "input_tokens": 22329,
+  "output_tokens": 1242,
+  "model_calls": 12,
+  "tool_attempts_executed": 10,
+  "tool_attempts_blocked": 0,
+  "config_sha256": "faa79929e12987fd301e07cb81d61e4b6ac4b87d4afce32de9b71229997dfdd1"
+}

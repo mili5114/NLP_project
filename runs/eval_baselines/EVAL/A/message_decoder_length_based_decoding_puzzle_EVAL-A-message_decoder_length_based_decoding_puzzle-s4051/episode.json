@@ -1,0 +1,19 @@
+{
+  "schema_version": "1",
+  "trajectory_path": "runs/eval_baselines/EVAL/A/message_decoder_length_based_decoding_puzzle_EVAL-A-message_decoder_length_based_decoding_puzzle-s4051/turns.jsonl",
+  "wall_seconds": 101.14,
+  "run_id": "EVAL-A-message_decoder_length_based_decoding_puzzle-s4051",
+  "synthetic": false,
+  "task_id": "message_decoder/length_based_decoding_puzzle",
+  "split": "EVAL",
+  "condition": "A",
+  "status": "completed",
+  "termination_reason": "answer",
+  "final_answer": "646566",
+  "input_tokens": 21281,
+  "output_tokens": 2454,
+  "model_calls": 12,
+  "tool_attempts_executed": 21,
+  "tool_attempts_blocked": 0,
+  "config_sha256": "faa79929e12987fd301e07cb81d61e4b6ac4b87d4afce32de9b71229997dfdd1"
+}

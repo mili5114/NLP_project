@@ -1,0 +1,19 @@
+{
+  "schema_version": "1",
+  "trajectory_path": "runs/eval_baselines/EVAL/B/travel_itinerary_planning_new_york_holiday_season_EVAL-B-travel_itinerary_planning_new_york_holiday_season-s4051/turns.jsonl",
+  "wall_seconds": 33.365,
+  "run_id": "EVAL-B-travel_itinerary_planning_new_york_holiday_season-s4051",
+  "synthetic": false,
+  "task_id": "travel_itinerary_planning/new_york_holiday_season",
+  "split": "EVAL",
+  "condition": "B",
+  "status": "completed",
+  "termination_reason": "answer",
+  "final_answer": "1480",
+  "input_tokens": 10194,
+  "output_tokens": 782,
+  "model_calls": 7,
+  "tool_attempts_executed": 7,
+  "tool_attempts_blocked": 0,
+  "config_sha256": "faa79929e12987fd301e07cb81d61e4b6ac4b87d4afce32de9b71229997dfdd1"
+}

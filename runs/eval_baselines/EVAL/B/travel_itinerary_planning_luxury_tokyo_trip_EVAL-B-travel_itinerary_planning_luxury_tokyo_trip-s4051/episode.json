@@ -1,0 +1,19 @@
+{
+  "schema_version": "1",
+  "trajectory_path": "runs/eval_baselines/EVAL/B/travel_itinerary_planning_luxury_tokyo_trip_EVAL-B-travel_itinerary_planning_luxury_tokyo_trip-s4051/turns.jsonl",
+  "wall_seconds": 30.256,
+  "run_id": "EVAL-B-travel_itinerary_planning_luxury_tokyo_trip-s4051",
+  "synthetic": false,
+  "task_id": "travel_itinerary_planning/luxury_tokyo_trip",
+  "split": "EVAL",
+  "condition": "B",
+  "status": "completed",
+  "termination_reason": "final_answer_after_turns_exhausted",
+  "final_answer": "600",
+  "input_tokens": 21162,
+  "output_tokens": 680,
+  "model_calls": 13,
+  "tool_attempts_executed": 4,
+  "tool_attempts_blocked": 0,
+  "config_sha256": "faa79929e12987fd301e07cb81d61e4b6ac4b87d4afce32de9b71229997dfdd1"
+}

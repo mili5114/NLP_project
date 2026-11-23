@@ -1,0 +1,19 @@
+{
+  "schema_version": "1",
+  "trajectory_path": "runs/eval_baselines/EVAL/A/travel_itinerary_planning_three_city_european_tour_EVAL-A-travel_itinerary_planning_three_city_european_tour-s4051/turns.jsonl",
+  "wall_seconds": 118.506,
+  "run_id": "EVAL-A-travel_itinerary_planning_three_city_european_tour-s4051",
+  "synthetic": false,
+  "task_id": "travel_itinerary_planning/three_city_european_tour",
+  "split": "EVAL",
+  "condition": "A",
+  "status": "no_answer",
+  "termination_reason": "token_budget_exhausted",
+  "final_answer": null,
+  "input_tokens": 23489,
+  "output_tokens": 2944,
+  "model_calls": 10,
+  "tool_attempts_executed": 16,
+  "tool_attempts_blocked": 8,
+  "config_sha256": "faa79929e12987fd301e07cb81d61e4b6ac4b87d4afce32de9b71229997dfdd1"
+}

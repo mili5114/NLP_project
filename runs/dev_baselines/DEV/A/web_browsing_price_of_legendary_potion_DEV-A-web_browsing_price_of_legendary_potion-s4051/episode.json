@@ -1,0 +1,19 @@
+{
+  "schema_version": "1",
+  "trajectory_path": "runs/dev_baselines/DEV/A/web_browsing_price_of_legendary_potion_DEV-A-web_browsing_price_of_legendary_potion-s4051/turns.jsonl",
+  "wall_seconds": 17.221,
+  "run_id": "DEV-A-web_browsing_price_of_legendary_potion-s4051",
+  "synthetic": false,
+  "task_id": "web_browsing/price_of_legendary_potion",
+  "split": "DEV",
+  "condition": "A",
+  "status": "completed",
+  "termination_reason": "answer",
+  "final_answer": "82.93",
+  "input_tokens": 6578,
+  "output_tokens": 397,
+  "model_calls": 6,
+  "tool_attempts_executed": 5,
+  "tool_attempts_blocked": 0,
+  "config_sha256": "faa79929e12987fd301e07cb81d61e4b6ac4b87d4afce32de9b71229997dfdd1"
+}

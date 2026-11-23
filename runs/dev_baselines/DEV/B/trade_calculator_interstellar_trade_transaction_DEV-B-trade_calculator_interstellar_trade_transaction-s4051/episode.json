@@ -1,0 +1,19 @@
+{
+  "schema_version": "1",
+  "trajectory_path": "runs/dev_baselines/DEV/B/trade_calculator_interstellar_trade_transaction_DEV-B-trade_calculator_interstellar_trade_transaction-s4051/turns.jsonl",
+  "wall_seconds": 27.075,
+  "run_id": "DEV-B-trade_calculator_interstellar_trade_transaction-s4051",
+  "synthetic": false,
+  "task_id": "trade_calculator/interstellar_trade_transaction",
+  "split": "DEV",
+  "condition": "B",
+  "status": "completed",
+  "termination_reason": "answer",
+  "final_answer": "8100.0",
+  "input_tokens": 7537,
+  "output_tokens": 653,
+  "model_calls": 6,
+  "tool_attempts_executed": 4,
+  "tool_attempts_blocked": 0,
+  "config_sha256": "faa79929e12987fd301e07cb81d61e4b6ac4b87d4afce32de9b71229997dfdd1"
+}

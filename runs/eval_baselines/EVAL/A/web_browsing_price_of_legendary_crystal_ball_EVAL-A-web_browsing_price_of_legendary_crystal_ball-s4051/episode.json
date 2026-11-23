@@ -1,0 +1,19 @@
+{
+  "schema_version": "1",
+  "trajectory_path": "runs/eval_baselines/EVAL/A/web_browsing_price_of_legendary_crystal_ball_EVAL-A-web_browsing_price_of_legendary_crystal_ball-s4051/turns.jsonl",
+  "wall_seconds": 11.271,
+  "run_id": "EVAL-A-web_browsing_price_of_legendary_crystal_ball-s4051",
+  "synthetic": false,
+  "task_id": "web_browsing/price_of_legendary_crystal_ball",
+  "split": "EVAL",
+  "condition": "A",
+  "status": "completed",
+  "termination_reason": "answer",
+  "final_answer": "130.84",
+  "input_tokens": 5102,
+  "output_tokens": 271,
+  "model_calls": 5,
+  "tool_attempts_executed": 4,
+  "tool_attempts_blocked": 0,
+  "config_sha256": "faa79929e12987fd301e07cb81d61e4b6ac4b87d4afce32de9b71229997dfdd1"
+}

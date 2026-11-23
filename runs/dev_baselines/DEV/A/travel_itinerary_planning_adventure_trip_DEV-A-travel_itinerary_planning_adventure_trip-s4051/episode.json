@@ -1,0 +1,19 @@
+{
+  "schema_version": "1",
+  "trajectory_path": "runs/dev_baselines/DEV/A/travel_itinerary_planning_adventure_trip_DEV-A-travel_itinerary_planning_adventure_trip-s4051/turns.jsonl",
+  "wall_seconds": 68.8,
+  "run_id": "DEV-A-travel_itinerary_planning_adventure_trip-s4051",
+  "synthetic": false,
+  "task_id": "travel_itinerary_planning/adventure_trip",
+  "split": "DEV",
+  "condition": "A",
+  "status": "completed",
+  "termination_reason": "final_answer_after_turns_exhausted",
+  "final_answer": "1830",
+  "input_tokens": 26141,
+  "output_tokens": 1583,
+  "model_calls": 13,
+  "tool_attempts_executed": 31,
+  "tool_attempts_blocked": 0,
+  "config_sha256": "faa79929e12987fd301e07cb81d61e4b6ac4b87d4afce32de9b71229997dfdd1"
+}

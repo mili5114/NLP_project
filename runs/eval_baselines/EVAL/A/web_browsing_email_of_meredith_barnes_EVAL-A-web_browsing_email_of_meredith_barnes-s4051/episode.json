@@ -1,0 +1,19 @@
+{
+  "schema_version": "1",
+  "trajectory_path": "runs/eval_baselines/EVAL/A/web_browsing_email_of_meredith_barnes_EVAL-A-web_browsing_email_of_meredith_barnes-s4051/turns.jsonl",
+  "wall_seconds": 14.174,
+  "run_id": "EVAL-A-web_browsing_email_of_meredith_barnes-s4051",
+  "synthetic": false,
+  "task_id": "web_browsing/email_of_meredith_barnes",
+  "split": "EVAL",
+  "condition": "A",
+  "status": "completed",
+  "termination_reason": "answer",
+  "final_answer": "meredith.barnes@lawrence-pacheco.com",
+  "input_tokens": 6472,
+  "output_tokens": 341,
+  "model_calls": 6,
+  "tool_attempts_executed": 5,
+  "tool_attempts_blocked": 0,
+  "config_sha256": "faa79929e12987fd301e07cb81d61e4b6ac4b87d4afce32de9b71229997dfdd1"
+}

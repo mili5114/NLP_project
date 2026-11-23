@@ -1,0 +1,19 @@
+{
+  "schema_version": "1",
+  "trajectory_path": "runs/dev_baselines/DEV/A/trade_calculator_bulk_trade_quantity_discount_DEV-A-trade_calculator_bulk_trade_quantity_discount-s4051/turns.jsonl",
+  "wall_seconds": 34.052,
+  "run_id": "DEV-A-trade_calculator_bulk_trade_quantity_discount-s4051",
+  "synthetic": false,
+  "task_id": "trade_calculator/bulk_trade_quantity_discount",
+  "split": "DEV",
+  "condition": "A",
+  "status": "completed",
+  "termination_reason": "answer",
+  "final_answer": "7182000.0",
+  "input_tokens": 8971,
+  "output_tokens": 794,
+  "model_calls": 7,
+  "tool_attempts_executed": 5,
+  "tool_attempts_blocked": 0,
+  "config_sha256": "faa79929e12987fd301e07cb81d61e4b6ac4b87d4afce32de9b71229997dfdd1"
+}

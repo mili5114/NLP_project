@@ -1,0 +1,19 @@
+{
+  "schema_version": "1",
+  "trajectory_path": "runs/eval_baselines/EVAL/B/trade_calculator_taxed_commodity_export_EVAL-B-trade_calculator_taxed_commodity_export-s4051/turns.jsonl",
+  "wall_seconds": 27.521,
+  "run_id": "EVAL-B-trade_calculator_taxed_commodity_export-s4051",
+  "synthetic": false,
+  "task_id": "trade_calculator/taxed_commodity_export",
+  "split": "EVAL",
+  "condition": "B",
+  "status": "completed",
+  "termination_reason": "answer",
+  "final_answer": "50400.0",
+  "input_tokens": 7594,
+  "output_tokens": 654,
+  "model_calls": 6,
+  "tool_attempts_executed": 4,
+  "tool_attempts_blocked": 0,
+  "config_sha256": "faa79929e12987fd301e07cb81d61e4b6ac4b87d4afce32de9b71229997dfdd1"
+}

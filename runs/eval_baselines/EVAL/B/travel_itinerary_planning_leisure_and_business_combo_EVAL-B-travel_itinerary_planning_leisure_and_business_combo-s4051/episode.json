@@ -1,0 +1,19 @@
+{
+  "schema_version": "1",
+  "trajectory_path": "runs/eval_baselines/EVAL/B/travel_itinerary_planning_leisure_and_business_combo_EVAL-B-travel_itinerary_planning_leisure_and_business_combo-s4051/turns.jsonl",
+  "wall_seconds": 59.433,
+  "run_id": "EVAL-B-travel_itinerary_planning_leisure_and_business_combo-s4051",
+  "synthetic": false,
+  "task_id": "travel_itinerary_planning/leisure_and_business_combo",
+  "split": "EVAL",
+  "condition": "B",
+  "status": "completed",
+  "termination_reason": "final_answer_after_turns_exhausted",
+  "final_answer": "1030",
+  "input_tokens": 40153,
+  "output_tokens": 1343,
+  "model_calls": 13,
+  "tool_attempts_executed": 29,
+  "tool_attempts_blocked": 30,
+  "config_sha256": "faa79929e12987fd301e07cb81d61e4b6ac4b87d4afce32de9b71229997dfdd1"
+}

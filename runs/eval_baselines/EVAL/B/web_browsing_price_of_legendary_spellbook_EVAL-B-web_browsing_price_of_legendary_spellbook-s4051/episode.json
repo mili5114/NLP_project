@@ -1,0 +1,19 @@
+{
+  "schema_version": "1",
+  "trajectory_path": "runs/eval_baselines/EVAL/B/web_browsing_price_of_legendary_spellbook_EVAL-B-web_browsing_price_of_legendary_spellbook-s4051/turns.jsonl",
+  "wall_seconds": 11.437,
+  "run_id": "EVAL-B-web_browsing_price_of_legendary_spellbook-s4051",
+  "synthetic": false,
+  "task_id": "web_browsing/price_of_legendary_spellbook",
+  "split": "EVAL",
+  "condition": "B",
+  "status": "completed",
+  "termination_reason": "answer",
+  "final_answer": "181.45",
+  "input_tokens": 6056,
+  "output_tokens": 263,
+  "model_calls": 5,
+  "tool_attempts_executed": 4,
+  "tool_attempts_blocked": 0,
+  "config_sha256": "faa79929e12987fd301e07cb81d61e4b6ac4b87d4afce32de9b71229997dfdd1"
+}

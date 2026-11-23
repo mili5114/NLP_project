@@ -70,3 +70,28 @@ Thumbs.db
 
 # 试跑数据只入库一份带注记的副本，其余本地产物不入库
 !runs/dev_baselines/DEV/A/pilot_14051965/
+
+# 2026-11-23: 首轮基线记录入库（DEV 16x2 + EVAL 27x2，约 13MB）——B/C 需要只读这些 JSONL
+!/runs/dev_baselines/DEV/
+!/runs/dev_baselines/DEV/A/
+!/runs/dev_baselines/DEV/A/*/
+!/runs/dev_baselines/DEV/A/**/episode.json
+!/runs/dev_baselines/DEV/A/**/manifest.json
+!/runs/dev_baselines/DEV/A/**/turns.jsonl
+!/runs/dev_baselines/DEV/B/
+!/runs/dev_baselines/DEV/B/*/
+!/runs/dev_baselines/DEV/B/**/episode.json
+!/runs/dev_baselines/DEV/B/**/manifest.json
+!/runs/dev_baselines/DEV/B/**/turns.jsonl
+!/runs/eval_baselines/
+!/runs/eval_baselines/EVAL/
+!/runs/eval_baselines/EVAL/A/
+!/runs/eval_baselines/EVAL/A/*/
+!/runs/eval_baselines/EVAL/A/**/episode.json
+!/runs/eval_baselines/EVAL/A/**/manifest.json
+!/runs/eval_baselines/EVAL/A/**/turns.jsonl
+!/runs/eval_baselines/EVAL/B/
+!/runs/eval_baselines/EVAL/B/*/
+!/runs/eval_baselines/EVAL/B/**/episode.json
+!/runs/eval_baselines/EVAL/B/**/manifest.json
+!/runs/eval_baselines/EVAL/B/**/turns.jsonl

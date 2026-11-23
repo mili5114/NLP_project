@@ -1,0 +1,19 @@
+{
+  "schema_version": "1",
+  "trajectory_path": "runs/eval_baselines/EVAL/A/trade_calculator_variable_tariff_profit_maximization_EVAL-A-trade_calculator_variable_tariff_profit_maximization-s4051/turns.jsonl",
+  "wall_seconds": 96.588,
+  "run_id": "EVAL-A-trade_calculator_variable_tariff_profit_maximization-s4051",
+  "synthetic": false,
+  "task_id": "trade_calculator/variable_tariff_profit_maximization",
+  "split": "EVAL",
+  "condition": "A",
+  "status": "completed",
+  "termination_reason": "final_answer_after_turns_exhausted",
+  "final_answer": "245565.0",
+  "input_tokens": 26023,
+  "output_tokens": 2353,
+  "model_calls": 13,
+  "tool_attempts_executed": 24,
+  "tool_attempts_blocked": 0,
+  "config_sha256": "faa79929e12987fd301e07cb81d61e4b6ac4b87d4afce32de9b71229997dfdd1"
+}

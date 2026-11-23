@@ -1,0 +1,19 @@
+{
+  "schema_version": "1",
+  "trajectory_path": "runs/eval_baselines/EVAL/A/web_browsing_email_of_kimberly_dudley_EVAL-A-web_browsing_email_of_kimberly_dudley-s4051/turns.jsonl",
+  "wall_seconds": 18.214,
+  "run_id": "EVAL-A-web_browsing_email_of_kimberly_dudley-s4051",
+  "synthetic": false,
+  "task_id": "web_browsing/email_of_kimberly_dudley",
+  "split": "EVAL",
+  "condition": "A",
+  "status": "completed",
+  "termination_reason": "answer",
+  "final_answer": "kimberly.dudley@miller-carter.org",
+  "input_tokens": 11672,
+  "output_tokens": 428,
+  "model_calls": 9,
+  "tool_attempts_executed": 8,
+  "tool_attempts_blocked": 0,
+  "config_sha256": "faa79929e12987fd301e07cb81d61e4b6ac4b87d4afce32de9b71229997dfdd1"
+}

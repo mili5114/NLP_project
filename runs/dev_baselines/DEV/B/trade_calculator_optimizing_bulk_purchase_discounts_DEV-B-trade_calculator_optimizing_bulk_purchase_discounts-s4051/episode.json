@@ -1,0 +1,19 @@
+{
+  "schema_version": "1",
+  "trajectory_path": "runs/dev_baselines/DEV/B/trade_calculator_optimizing_bulk_purchase_discounts_DEV-B-trade_calculator_optimizing_bulk_purchase_discounts-s4051/turns.jsonl",
+  "wall_seconds": 121.563,
+  "run_id": "DEV-B-trade_calculator_optimizing_bulk_purchase_discounts-s4051",
+  "synthetic": false,
+  "task_id": "trade_calculator/optimizing_bulk_purchase_discounts",
+  "split": "DEV",
+  "condition": "B",
+  "status": "no_answer",
+  "termination_reason": "token_budget_exhausted",
+  "final_answer": null,
+  "input_tokens": 18262,
+  "output_tokens": 2944,
+  "model_calls": 8,
+  "tool_attempts_executed": 0,
+  "tool_attempts_blocked": 0,
+  "config_sha256": "faa79929e12987fd301e07cb81d61e4b6ac4b87d4afce32de9b71229997dfdd1"
+}

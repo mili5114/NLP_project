@@ -1,0 +1,19 @@
+{
+  "schema_version": "1",
+  "trajectory_path": "runs/eval_baselines/EVAL/B/web_browsing_expertise_of_kimberly_dudley_EVAL-B-web_browsing_expertise_of_kimberly_dudley-s4051/turns.jsonl",
+  "wall_seconds": 12.051,
+  "run_id": "EVAL-B-web_browsing_expertise_of_kimberly_dudley-s4051",
+  "synthetic": false,
+  "task_id": "web_browsing/expertise_of_kimberly_dudley",
+  "split": "EVAL",
+  "condition": "B",
+  "status": "completed",
+  "termination_reason": "answer",
+  "final_answer": "Potion/Wand",
+  "input_tokens": 8180,
+  "output_tokens": 268,
+  "model_calls": 6,
+  "tool_attempts_executed": 5,
+  "tool_attempts_blocked": 0,
+  "config_sha256": "faa79929e12987fd301e07cb81d61e4b6ac4b87d4afce32de9b71229997dfdd1"
+}

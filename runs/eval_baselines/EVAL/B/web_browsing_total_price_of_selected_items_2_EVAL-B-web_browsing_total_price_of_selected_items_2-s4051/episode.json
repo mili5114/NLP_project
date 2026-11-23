@@ -1,0 +1,19 @@
+{
+  "schema_version": "1",
+  "trajectory_path": "runs/eval_baselines/EVAL/B/web_browsing_total_price_of_selected_items_2_EVAL-B-web_browsing_total_price_of_selected_items_2-s4051/turns.jsonl",
+  "wall_seconds": 29.285,
+  "run_id": "EVAL-B-web_browsing_total_price_of_selected_items_2-s4051",
+  "synthetic": false,
+  "task_id": "web_browsing/total_price_of_selected_items_2",
+  "split": "EVAL",
+  "condition": "B",
+  "status": "completed",
+  "termination_reason": "answer",
+  "final_answer": "380.42",
+  "input_tokens": 16560,
+  "output_tokens": 668,
+  "model_calls": 9,
+  "tool_attempts_executed": 8,
+  "tool_attempts_blocked": 0,
+  "config_sha256": "faa79929e12987fd301e07cb81d61e4b6ac4b87d4afce32de9b71229997dfdd1"
+}

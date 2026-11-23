@@ -1,0 +1,19 @@
+{
+  "schema_version": "1",
+  "trajectory_path": "runs/dev_baselines/DEV/A/web_browsing_email_of_allison_hill_DEV-A-web_browsing_email_of_allison_hill-s4051/turns.jsonl",
+  "wall_seconds": 13.601,
+  "run_id": "DEV-A-web_browsing_email_of_allison_hill-s4051",
+  "synthetic": false,
+  "task_id": "web_browsing/email_of_allison_hill",
+  "split": "DEV",
+  "condition": "A",
+  "status": "completed",
+  "termination_reason": "answer",
+  "final_answer": "allison.hill@taylor.net",
+  "input_tokens": 6376,
+  "output_tokens": 311,
+  "model_calls": 6,
+  "tool_attempts_executed": 5,
+  "tool_attempts_blocked": 0,
+  "config_sha256": "faa79929e12987fd301e07cb81d61e4b6ac4b87d4afce32de9b71229997dfdd1"
+}

@@ -1,0 +1,19 @@
+{
+  "schema_version": "1",
+  "trajectory_path": "runs/eval_baselines/EVAL/A/travel_itinerary_planning_leisure_multi_city_trip_EVAL-A-travel_itinerary_planning_leisure_multi_city_trip-s4051/turns.jsonl",
+  "wall_seconds": 95.506,
+  "run_id": "EVAL-A-travel_itinerary_planning_leisure_multi_city_trip-s4051",
+  "synthetic": false,
+  "task_id": "travel_itinerary_planning/leisure_multi_city_trip",
+  "split": "EVAL",
+  "condition": "A",
+  "status": "completed",
+  "termination_reason": "answer",
+  "final_answer": "910",
+  "input_tokens": 27600,
+  "output_tokens": 2345,
+  "model_calls": 12,
+  "tool_attempts_executed": 28,
+  "tool_attempts_blocked": 0,
+  "config_sha256": "faa79929e12987fd301e07cb81d61e4b6ac4b87d4afce32de9b71229997dfdd1"
+}

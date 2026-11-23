@@ -1,0 +1,19 @@
+{
+  "schema_version": "1",
+  "trajectory_path": "runs/dev_baselines/DEV/A/travel_itinerary_planning_multi_city_business_trip_DEV-A-travel_itinerary_planning_multi_city_business_trip-s4051/turns.jsonl",
+  "wall_seconds": 98.146,
+  "run_id": "DEV-A-travel_itinerary_planning_multi_city_business_trip-s4051",
+  "synthetic": false,
+  "task_id": "travel_itinerary_planning/multi_city_business_trip",
+  "split": "DEV",
+  "condition": "A",
+  "status": "completed",
+  "termination_reason": "final_answer_after_turns_exhausted",
+  "final_answer": "495",
+  "input_tokens": 28892,
+  "output_tokens": 2082,
+  "model_calls": 13,
+  "tool_attempts_executed": 32,
+  "tool_attempts_blocked": 4,
+  "config_sha256": "faa79929e12987fd301e07cb81d61e4b6ac4b87d4afce32de9b71229997dfdd1"
+}

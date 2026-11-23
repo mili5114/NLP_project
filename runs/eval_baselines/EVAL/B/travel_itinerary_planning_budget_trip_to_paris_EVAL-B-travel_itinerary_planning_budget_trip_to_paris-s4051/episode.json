@@ -1,0 +1,19 @@
+{
+  "schema_version": "1",
+  "trajectory_path": "runs/eval_baselines/EVAL/B/travel_itinerary_planning_budget_trip_to_paris_EVAL-B-travel_itinerary_planning_budget_trip_to_paris-s4051/turns.jsonl",
+  "wall_seconds": 49.503,
+  "run_id": "EVAL-B-travel_itinerary_planning_budget_trip_to_paris-s4051",
+  "synthetic": false,
+  "task_id": "travel_itinerary_planning/budget_trip_to_paris",
+  "split": "EVAL",
+  "condition": "B",
+  "status": "completed",
+  "termination_reason": "answer",
+  "final_answer": "650",
+  "input_tokens": 13530,
+  "output_tokens": 1173,
+  "model_calls": 7,
+  "tool_attempts_executed": 9,
+  "tool_attempts_blocked": 0,
+  "config_sha256": "faa79929e12987fd301e07cb81d61e4b6ac4b87d4afce32de9b71229997dfdd1"
+}

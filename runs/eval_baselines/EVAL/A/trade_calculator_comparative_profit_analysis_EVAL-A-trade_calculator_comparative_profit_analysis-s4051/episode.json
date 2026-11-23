@@ -1,0 +1,19 @@
+{
+  "schema_version": "1",
+  "trajectory_path": "runs/eval_baselines/EVAL/A/trade_calculator_comparative_profit_analysis_EVAL-A-trade_calculator_comparative_profit_analysis-s4051/turns.jsonl",
+  "wall_seconds": 42.931,
+  "run_id": "EVAL-A-trade_calculator_comparative_profit_analysis-s4051",
+  "synthetic": false,
+  "task_id": "trade_calculator/comparative_profit_analysis",
+  "split": "EVAL",
+  "condition": "A",
+  "status": "completed",
+  "termination_reason": "answer",
+  "final_answer": "75600.0",
+  "input_tokens": 16332,
+  "output_tokens": 1028,
+  "model_calls": 11,
+  "tool_attempts_executed": 9,
+  "tool_attempts_blocked": 0,
+  "config_sha256": "faa79929e12987fd301e07cb81d61e4b6ac4b87d4afce32de9b71229997dfdd1"
+}

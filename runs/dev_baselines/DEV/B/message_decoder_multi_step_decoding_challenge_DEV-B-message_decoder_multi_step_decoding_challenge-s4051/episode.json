@@ -1,0 +1,19 @@
+{
+  "schema_version": "1",
+  "trajectory_path": "runs/dev_baselines/DEV/B/message_decoder_multi_step_decoding_challenge_DEV-B-message_decoder_multi_step_decoding_challenge-s4051/turns.jsonl",
+  "wall_seconds": 49.532,
+  "run_id": "DEV-B-message_decoder_multi_step_decoding_challenge-s4051",
+  "synthetic": false,
+  "task_id": "message_decoder/multi_step_decoding_challenge",
+  "split": "DEV",
+  "condition": "B",
+  "status": "completed",
+  "termination_reason": "final_answer_after_turns_exhausted",
+  "final_answer": "PbVdqwzru",
+  "input_tokens": 21363,
+  "output_tokens": 1170,
+  "model_calls": 13,
+  "tool_attempts_executed": 11,
+  "tool_attempts_blocked": 0,
+  "config_sha256": "faa79929e12987fd301e07cb81d61e4b6ac4b87d4afce32de9b71229997dfdd1"
+}

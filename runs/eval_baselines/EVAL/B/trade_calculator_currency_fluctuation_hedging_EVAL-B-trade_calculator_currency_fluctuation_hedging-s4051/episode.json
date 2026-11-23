@@ -1,0 +1,19 @@
+{
+  "schema_version": "1",
+  "trajectory_path": "runs/eval_baselines/EVAL/B/trade_calculator_currency_fluctuation_hedging_EVAL-B-trade_calculator_currency_fluctuation_hedging-s4051/turns.jsonl",
+  "wall_seconds": 44.201,
+  "run_id": "EVAL-B-trade_calculator_currency_fluctuation_hedging-s4051",
+  "synthetic": false,
+  "task_id": "trade_calculator/currency_fluctuation_hedging",
+  "split": "EVAL",
+  "condition": "B",
+  "status": "completed",
+  "termination_reason": "answer",
+  "final_answer": "202500.0",
+  "input_tokens": 11050,
+  "output_tokens": 1053,
+  "model_calls": 7,
+  "tool_attempts_executed": 11,
+  "tool_attempts_blocked": 0,
+  "config_sha256": "faa79929e12987fd301e07cb81d61e4b6ac4b87d4afce32de9b71229997dfdd1"
+}

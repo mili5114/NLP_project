@@ -1,0 +1,19 @@
+{
+  "schema_version": "1",
+  "trajectory_path": "runs/dev_baselines/DEV/A/web_browsing_people_in_sales_DEV-A-web_browsing_people_in_sales-s4051/turns.jsonl",
+  "wall_seconds": 11.85,
+  "run_id": "DEV-A-web_browsing_people_in_sales-s4051",
+  "synthetic": false,
+  "task_id": "web_browsing/people_in_sales",
+  "split": "DEV",
+  "condition": "A",
+  "status": "completed",
+  "termination_reason": "answer",
+  "final_answer": "4",
+  "input_tokens": 5013,
+  "output_tokens": 273,
+  "model_calls": 5,
+  "tool_attempts_executed": 4,
+  "tool_attempts_blocked": 0,
+  "config_sha256": "faa79929e12987fd301e07cb81d61e4b6ac4b87d4afce32de9b71229997dfdd1"
+}

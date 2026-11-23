@@ -1,0 +1,19 @@
+{
+  "schema_version": "1",
+  "trajectory_path": "runs/eval_baselines/EVAL/B/web_browsing_expertise_of_henry_santiago_EVAL-B-web_browsing_expertise_of_henry_santiago-s4051/turns.jsonl",
+  "wall_seconds": 13.398,
+  "run_id": "EVAL-B-web_browsing_expertise_of_henry_santiago-s4051",
+  "synthetic": false,
+  "task_id": "web_browsing/expertise_of_henry_santiago",
+  "split": "EVAL",
+  "condition": "B",
+  "status": "completed",
+  "termination_reason": "answer",
+  "final_answer": "Wand/Spellbook",
+  "input_tokens": 10538,
+  "output_tokens": 298,
+  "model_calls": 7,
+  "tool_attempts_executed": 6,
+  "tool_attempts_blocked": 0,
+  "config_sha256": "faa79929e12987fd301e07cb81d61e4b6ac4b87d4afce32de9b71229997dfdd1"
+}

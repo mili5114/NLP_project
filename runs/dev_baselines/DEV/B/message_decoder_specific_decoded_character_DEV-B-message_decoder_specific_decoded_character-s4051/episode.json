@@ -1,0 +1,19 @@
+{
+  "schema_version": "1",
+  "trajectory_path": "runs/dev_baselines/DEV/B/message_decoder_specific_decoded_character_DEV-B-message_decoder_specific_decoded_character-s4051/turns.jsonl",
+  "wall_seconds": 7.141,
+  "run_id": "DEV-B-message_decoder_specific_decoded_character-s4051",
+  "synthetic": false,
+  "task_id": "message_decoder/specific_decoded_character",
+  "split": "DEV",
+  "condition": "B",
+  "status": "completed",
+  "termination_reason": "answer",
+  "final_answer": "rzhehgavxMuxP",
+  "input_tokens": 3151,
+  "output_tokens": 164,
+  "model_calls": 4,
+  "tool_attempts_executed": 3,
+  "tool_attempts_blocked": 0,
+  "config_sha256": "faa79929e12987fd301e07cb81d61e4b6ac4b87d4afce32de9b71229997dfdd1"
+}

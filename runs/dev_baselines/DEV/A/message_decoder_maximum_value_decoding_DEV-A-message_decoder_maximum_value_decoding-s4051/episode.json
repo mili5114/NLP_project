@@ -1,0 +1,19 @@
+{
+  "schema_version": "1",
+  "trajectory_path": "runs/dev_baselines/DEV/A/message_decoder_maximum_value_decoding_DEV-A-message_decoder_maximum_value_decoding-s4051/turns.jsonl",
+  "wall_seconds": 35.142,
+  "run_id": "DEV-A-message_decoder_maximum_value_decoding-s4051",
+  "synthetic": false,
+  "task_id": "message_decoder/maximum_value_decoding",
+  "split": "DEV",
+  "condition": "A",
+  "status": "completed",
+  "termination_reason": "answer",
+  "final_answer": "987",
+  "input_tokens": 10037,
+  "output_tokens": 833,
+  "model_calls": 8,
+  "tool_attempts_executed": 13,
+  "tool_attempts_blocked": 0,
+  "config_sha256": "faa79929e12987fd301e07cb81d61e4b6ac4b87d4afce32de9b71229997dfdd1"
+}

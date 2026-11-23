@@ -1,0 +1,19 @@
+{
+  "schema_version": "1",
+  "trajectory_path": "runs/eval_baselines/EVAL/A/message_decoder_shortest_caesar_decoded_message_EVAL-A-message_decoder_shortest_caesar_decoded_message-s4051/turns.jsonl",
+  "wall_seconds": 23.646,
+  "run_id": "EVAL-A-message_decoder_shortest_caesar_decoded_message-s4051",
+  "synthetic": false,
+  "task_id": "message_decoder/shortest_caesar_decoded_message",
+  "split": "EVAL",
+  "condition": "A",
+  "status": "completed",
+  "termination_reason": "answer",
+  "final_answer": "3",
+  "input_tokens": 5503,
+  "output_tokens": 575,
+  "model_calls": 6,
+  "tool_attempts_executed": 17,
+  "tool_attempts_blocked": 0,
+  "config_sha256": "faa79929e12987fd301e07cb81d61e4b6ac4b87d4afce32de9b71229997dfdd1"
+}

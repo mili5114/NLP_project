@@ -1,0 +1,19 @@
+{
+  "schema_version": "1",
+  "trajectory_path": "runs/eval_baselines/EVAL/B/travel_itinerary_planning_grand_tour_vacation_EVAL-B-travel_itinerary_planning_grand_tour_vacation-s4051/turns.jsonl",
+  "wall_seconds": 56.357,
+  "run_id": "EVAL-B-travel_itinerary_planning_grand_tour_vacation-s4051",
+  "synthetic": false,
+  "task_id": "travel_itinerary_planning/grand_tour_vacation",
+  "split": "EVAL",
+  "condition": "B",
+  "status": "completed",
+  "termination_reason": "answer",
+  "final_answer": "3295",
+  "input_tokens": 20543,
+  "output_tokens": 1320,
+  "model_calls": 9,
+  "tool_attempts_executed": 21,
+  "tool_attempts_blocked": 0,
+  "config_sha256": "faa79929e12987fd301e07cb81d61e4b6ac4b87d4afce32de9b71229997dfdd1"
+}
