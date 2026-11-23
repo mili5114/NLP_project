@@ -77,3 +77,11 @@ python scripts/plot_results.py --summary results/synthetic/summary.json \
 ## 5. 本轮边界
 
 所有 `results/synthetic/` 下的表格与图都是合成演示，**不是实验结果**。正式 EVAL 尚缺 A 的平台/真实日志/参考导出与 B 的冻结包，详见 `docs/C_eval_readiness.md`。本轮未开展真实推理、未修改方法、未编造结果。
+
+## 6. 2026-11-23：真实 DEV 对接
+
+- 已同步 main 38198ea，新增 runtime_adapter.py 和 prepare_runtime_records.py，仅对派生副本做字段映射与结构核验。
+- 32 条真实 DEV A/B 已读取；排除登记的旧 pilot；验证唯一槽位、逐轮 tokens/调用数与首个答案出口。原始文件未修改。
+- 新增 9 个适配/输入保护测试，连同原 C 的56项共65项通过。
+- 检出课程要求的提示签名尚未修正及两个预留最终轮出口待确认问题；详见 docs/C_REAL_LOG_REVIEW_20261123.md。未把结构检查当正式审计 PASS，未评分正确率，未读取 EVAL 轨迹，未运行模型。
+- A 已有真实平台/日志；当前待交接重点变为修复后的协议一致数据和私有 reference 导出，B 的冻结包仍待交付。此前“没有真实日志”的状态已过时。
