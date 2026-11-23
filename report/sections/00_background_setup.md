@@ -1,0 +1,25 @@
+# Background and Experimental Setup
+
+*This chapter documents the execution platform and baseline protocol produced by Contributor A. Contributors B (feedback-strategy design) and C (offline scoring) build directly on the artifacts described here.*
+
+## Research Motivation
+
+The project asks whether the feedback an agent receives after each tool call changes its behavior on multi-tool tasks. To make that question answerable, the team needs an execution platform that is (i) faithful to the official CodeAct protocol, (ii) identical across feedback conditions, and (iii) fully recorded, so that any behavioral difference observed later can be attributed to the feedback strategy rather than to execution drift. This motivates the two deliverables of Contributor A: a pinned, reproducible runner that replaces the official OpenAI backend with local Qwen3.5-4B inference, and a first round of condition-A/condition-B baselines against which Contributor B's strategy is compared.
+
+A second motivation is diagnostic: before any strategy can be evaluated, the platform itself must be shown not to distort results. Our first pilot run surfaced a 20x decoding slowdown (1.3 tok/s against an expected 20+ tok/s), which would have silently truncated every task's budget to two turns. Root-causing this — a missing optimized attention kernel (`flash-linear-attention`) causing a pure-PyTorch fallback, compounded by a one-time Triton JIT compilation charged to the first task's 180 s budget — became part of the setup work itself, and the fix (kernel installation plus a load-time warmup generation) is verified by the benchmarks below.
+
+## Experimental Setup
+
+**Model and decoding.** All experiments use Qwen3.5-4B at pinned revision `851bf6e`, loaded in BF16, with greedy decoding and non-thinking mode (chat-template flag `enable_thinking=False`, stop sequences `End Action` and the official EOS tokens 248044/248046). The upstream CodeAct codebase is vendored as a git submodule pinned to commit `d607f56`; the only runtime modification replaces the OpenAI API backend with a local `transformers` backend (class `TransformersBackend`) that emits real token counts and wall-clock times per turn.
+
+**Environment pinning.** Six core libraries are version-locked (`torch 2.10.0`, `transformers 5.17.0`, `tokenizers 0.23.2`, `accelerate 1.15.0`, `ipython 8.37.0`, `numpy 2.2.6`) and recorded in `configs/versions.json` with a pip lock file. The three course configuration files are checksum-verified (SHA-256) at runner startup; a mismatch aborts the run rather than proceeding with drifted settings.
+
+**Tasks and budget.** We use the fixed 43-task M³ToolEval split: 16 development tasks (feedback-strategy design only) and 27 evaluation tasks. Every task runs under identical limits read from the course configuration: 12 assistant rounds plus one final round, 3072 completion tokens, 16384-token context, 180 s per task, 15 s per code block, and a 2000-character feedback cap. A task ends at the agent's *first* submitted final answer; there is no retry on an incorrect answer. Reference answers are never exposed to the agent: task loading redirects `stdout` so that the dataset's `print_task` cannot leak the expected output, and a CPU test asserts this isolation.
+
+**Execution semantics.** Tool calls are parsed from `IPython`-style code blocks inside an `IPython 8.37` interactive shell that persists within a task (variables carry across turns) and is reset between tasks. A tool-event observer records seven fields per tool call (index, tool, args, kwargs, execution status, result, elapsed), with hard caps of 4 calls per code block and 32 per task; calls beyond the cap are *blocked* — recorded but not executed — so budget overreach is observable rather than invisible.
+
+**Conditions.** Condition A returns the official task output verbatim after each action. Condition B (Contributor B's design) prepends execution trace information ahead of the official output within the same 2000-character cap; the cap is not relaxed for either condition. Prompts, parsing, tool implementations, initial task states, and all limits are byte-identical across conditions.
+
+**Records.** Each episode writes three records: `episode.json` (outcome, termination reason, token/tool counts, wall time), `manifest.json` (config hashes, model revision, git commit), and `turns.jsonl` (per-turn messages, raw generation, parse result, tool events, feedback, budget state).
+
+**Throughput verification.** On the A40 partition (HKUST-GZ HPC, Slurm), after kernel installation and warmup, sustained decoding is 23.6–25.2 tok/s. The first-round baselines (jobs 14062955–58) completed 86 episodes with zero parse failures, zero task timeouts, average wall time 37–52 s per task, and a maximum of 130 s — a 50 s margin under the 180 s limit. Final answers were produced for 15/16 (DEV-A), 14/16 (DEV-B), 23/27 (EVAL-A), and 25/27 (EVAL-B); all nine no-answer episodes terminated by explicit budget exhaustion, not by execution faults (see the failure taxonomy in `docs/failure_taxonomy.md`).
