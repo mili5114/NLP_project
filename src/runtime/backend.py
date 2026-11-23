@@ -110,6 +110,22 @@ class TransformersBackend:
             attn_implementation=attn_implementation,
         )
         self.model.eval()
+        # 预热：第一次生成会触发 Triton/FLA 内核 JIT 编译（一次性约 35 秒），
+        # 若发生在任务循环内会吃掉第一个任务的 180 秒预算，这里提前吸收掉。
+        try:
+            warm_ids = self.tokenizer(
+                "User: hello. Assistant:", return_tensors="pt"
+            ).to(self.device)
+            with self.torch.no_grad():
+                self.model.generate(
+                    **warm_ids,
+                    max_new_tokens=8,
+                    do_sample=False,
+                    pad_token_id=self.tokenizer.pad_token_id
+                    or self.tokenizer.eos_token_id,
+                )
+        except Exception:  # noqa: BLE001 - 预热失败不影响正式运行
+            pass
 
     def _render(self, messages: list[dict[str, str]]) -> str:
         kw = {"tokenize": False, "add_generation_prompt": True}
