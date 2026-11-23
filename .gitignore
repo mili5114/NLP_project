@@ -45,6 +45,7 @@ raw_logs/
 *.log
 *.jsonl.raw
 /runs/**
+!/runs/index.md
 # Allow small, explicitly reviewed smoke evidence and DEV directory placeholders.
 !/runs/smoke/
 !/runs/smoke/*.out
