@@ -59,3 +59,5 @@ blocked 事件已按课程语义保留执行效果，只拦超额调用；episod
 - `token_budget_exhausted` / `*_turns_exhausted` 建议单列为"预算受限"，不计入"错误率"；
 - 工具 TypeError 是 episode 内事件，episode 最终可能仍给出正确答案，不应把"出过错"等同"失败"；
 - 正确性一律以离线 scorer 对 `final_answer` 的判定为准。
+
+> **Caliber confirmed** by SibeiLYU, 2026-11-23: the 9 no-answer episodes are classified as budget exhaustion (a legitimate termination under the protocol, scored 0 by the offline scorer), NOT execution faults. Platform-level engineering failures in this round: 0.

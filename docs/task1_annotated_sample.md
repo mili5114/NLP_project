@@ -95,3 +95,5 @@ sbatch -p i64m1tga40u --gres=gpu:a40:1 \
    CPU 测试 `test_variables_reset_between_tasks` 用 NameError 证明隔离。
 4. **为什么数工具调用要包函数**：代码动作是程序，循环里一行文本能执行一百次；只有拦在
    函数入口的计数才是真实执行次数。
+
+> **Sample confirmed** by SibeiLYU, 2026-11-23: interstellar_trade_transaction (DEV-A) is the Task 1 annotated sample.
