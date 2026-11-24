@@ -195,7 +195,9 @@ def run_episode(
             # （课程附件 §2：交互轮始终为最终答案预留 128 token）。
             break
 
-        gen = backend.generate(messages, max_new_tokens=alloc.max_new_tokens)
+        gen = backend.generate(
+            messages, max_new_tokens=alloc.max_new_tokens, deadline=budget.deadline
+        )
         budget.charge(completion_tokens=gen.completion_tokens)
         parsed = task.parse_generation(gen.text)
         turn_index += 1
@@ -217,9 +219,29 @@ def run_episode(
             )
             break
 
+        if budget.task_expired:
+            # 生成在 180 秒截止时被截断（或刚好到点）：照常落盘这一轮，
+            # 但不执行动作、不进最终轮——附件 §2 要求到点就结束任务。
+            _record_turn(
+                snapshot=snapshot,
+                gen=gen,
+                parsed=parsed,
+                max_new_tokens=alloc.max_new_tokens,
+                action=None,
+                events=[],
+                python_output=None,
+                feedback_text=None,
+                feedback_metadata={"note": "generation_cut_by_task_timeout"},
+                is_final=False,
+            )
+            termination = "task_timeout"
+            break
+
         if parsed["type"] == "action":
             observer.start_block(turn_index)
-            result = repl.run(parsed["content"])
+            # 代码块上限 15s，但也不能越过任务 180s 截止：用剩余时间钳制。
+            exec_timeout = min(limits.action_seconds, budget.seconds_remaining())
+            result = repl.run(parsed["content"], timeout_seconds=exec_timeout)
             events = observer.snapshot()
             fb = build_feedback(
                 python_output=result["stdout"],
@@ -243,7 +265,12 @@ def run_episode(
                 exec_seconds=result["elapsed_seconds"],
             )
             if result["timed_out"]:
-                termination = "action_timeout"
+                # 块超时可能有两个来源：真的超过 15s 块上限，或被 180s 任务截止钳制。
+                termination = (
+                    "task_timeout"
+                    if exec_timeout < limits.action_seconds
+                    else "action_timeout"
+                )
                 break
             continue
 
@@ -276,12 +303,17 @@ def run_episode(
             alloc = budget.allocate(prompt_tokens=prompt_tokens, is_final=True)
 
             if alloc.max_new_tokens > 0:
-                gen = backend.generate(messages, max_new_tokens=alloc.max_new_tokens)
+                gen = backend.generate(
+                    messages, max_new_tokens=alloc.max_new_tokens, deadline=budget.deadline
+                )
                 budget.charge(completion_tokens=gen.completion_tokens, is_final=True)
                 parsed = task.parse_generation(gen.text)
                 if parsed["type"] == "answer":
                     final_answer = parsed["content"]
                     termination = f"final_answer_after_{exhausted_by}_exhausted"
+                elif budget.task_expired:
+                    # 最终轮生成被 180 秒截止截断，没来得及写出可解析答案。
+                    termination = "task_timeout"
                 else:
                     termination = f"no_answer_after_{exhausted_by}_exhausted"
                 _record_turn(

@@ -31,6 +31,8 @@ conda activate codeact
 export HF_ENDPOINT=https://hf-mirror.com
 export TOKENIZERS_PARALLELISM=false
 export HF_HUB_OFFLINE=1
+# Triton/FLA 内核编译缓存固定到家目录：跨作业复用，避免每个新作业重新 JIT（~40s/次）。
+export TRITON_CACHE_DIR="${TRITON_CACHE_DIR:-$HOME/.triton_cache_codeact}"
 export MODEL_DIR="${MODEL_DIR:-$HOME/models/Qwen3.5-4B}"
 export COND="${COND:-A}"
 

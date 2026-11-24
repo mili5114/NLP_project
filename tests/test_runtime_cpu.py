@@ -110,6 +110,18 @@ class EpisodeTest(unittest.TestCase):
         self.assertTrue(last["generation_settings"]["is_final_turn"])
         self.assertEqual(last["generation_settings"]["max_new_tokens"], 128)
 
+    def test_generate_receives_task_deadline(self) -> None:
+        """每次 generate 都带上任务 180s 截止时刻（后端在生成中途截断用）。"""
+        result, _root, backend = self.run_episode(
+            [action("print('x')"), "Answer: ok"]
+        )
+        self.assertEqual(result["episode"]["termination_reason"], "answer")
+        self.assertEqual(len(backend.seen_deadlines), backend.calls)
+        self.assertTrue(all(d is not None for d in backend.seen_deadlines))
+        self.assertEqual(len(set(backend.seen_deadlines)), 1)  # 同一集内截止时刻不变
+        # 截止时刻 = episode 起点 + task_seconds，必然在未来一点的位置
+        self.assertGreater(backend.seen_deadlines[0], 0)
+
     def test_no_answer_records_null(self) -> None:
         replies = [action("print('thinking')")] * (self.cfg.limits.interaction_turns + 5)
         result, root, _backend = self.run_episode(replies)

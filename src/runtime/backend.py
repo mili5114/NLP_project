@@ -25,7 +25,9 @@ class Generation:
 class Backend(Protocol):
     name: str
 
-    def generate(self, messages: list[dict[str, str]], *, max_new_tokens: int) -> Generation: ...
+    def generate(
+        self, messages: list[dict[str, str]], *, max_new_tokens: int, deadline: float | None = None
+    ) -> Generation: ...
 
 
 def cut_at_stop(text: str, stop_text: str) -> tuple[str, bool]:
@@ -48,9 +50,13 @@ class FakeBackend:
     name: str = "fake"
     calls: int = 0
     seen_messages: list[list[dict[str, str]]] = field(default_factory=list)
+    seen_deadlines: list[float | None] = field(default_factory=list)
 
-    def generate(self, messages: list[dict[str, str]], *, max_new_tokens: int) -> Generation:
+    def generate(
+        self, messages: list[dict[str, str]], *, max_new_tokens: int, deadline: float | None = None
+    ) -> Generation:
         self.seen_messages.append([dict(m) for m in messages])
+        self.seen_deadlines.append(deadline)
         if not self.replies:
             raise RuntimeError("FakeBackend 没有配置回复")
         idx = min(self.calls, len(self.replies) - 1)
@@ -126,6 +132,24 @@ class TransformersBackend:
                 )
         except Exception:  # noqa: BLE001 - 预热失败不影响正式运行
             pass
+        # 长上下文预热：真实任务的 system prompt 约 1-2k token，FLA/Triton 内核
+        # 会随序列长度变化重新编译，短提示预热覆盖不到这条路径（实测首个长任务
+        # 单轮可达 70+ 秒，其中 ~40 秒是重编译）。这里用一段长 prompt 把
+        # 长序列路径的编译开销也吸收在加载阶段。
+        try:
+            warm_long = self.tokenizer(
+                "User: " + "word " * 1100 + "\nAssistant:", return_tensors="pt"
+            ).to(self.device)
+            with self.torch.no_grad():
+                self.model.generate(
+                    **warm_long,
+                    max_new_tokens=8,
+                    do_sample=False,
+                    pad_token_id=self.tokenizer.pad_token_id
+                    or self.tokenizer.eos_token_id,
+                )
+        except Exception:  # noqa: BLE001 - 预热失败不影响正式运行
+            pass
 
     def _render(self, messages: list[dict[str, str]]) -> str:
         kw = {"tokenize": False, "add_generation_prompt": True}
@@ -143,11 +167,34 @@ class TransformersBackend:
     def count_tokens(self, messages: list[dict[str, str]]) -> int:
         return int(len(self.tokenizer(self._render(messages))["input_ids"]))
 
-    def generate(self, messages: list[dict[str, str]], *, max_new_tokens: int) -> Generation:
+    def generate(
+        self, messages: list[dict[str, str]], *, max_new_tokens: int, deadline: float | None = None
+    ) -> Generation:
+        """deadline：time.monotonic() 绝对时刻。到点立即截断生成——
+        课程附件 §2 要求 180 秒到点就结束任务，不能让一轮生成把预算跑穿。"""
         started = time.perf_counter()
         text = self._render(messages)
         ids = self.tokenizer(text, return_tensors="pt").to(self.device)
         prompt_tokens = int(ids["input_ids"].shape[1])
+
+        stopper = None
+        stopping_criteria = None
+        if deadline is not None:
+            from transformers import StoppingCriteria, StoppingCriteriaList
+
+            class _DeadlineStopper(StoppingCriteria):
+                def __init__(self, limit: float) -> None:
+                    self.limit = limit
+                    self.hit = False
+
+                def __call__(self, input_ids: Any, scores: Any, **kwargs: Any) -> bool:  # noqa: ARG002
+                    if time.monotonic() >= self.limit:
+                        self.hit = True
+                        return True
+                    return False
+
+            stopper = _DeadlineStopper(deadline)
+            stopping_criteria = StoppingCriteriaList([stopper])
 
         with self.torch.no_grad():
             out = self.model.generate(
@@ -156,11 +203,17 @@ class TransformersBackend:
                 do_sample=False,
                 eos_token_id=self.eos_token_ids,
                 pad_token_id=self.tokenizer.pad_token_id or self.tokenizer.eos_token_id,
+                stopping_criteria=stopping_criteria,
             )
         gen_ids = out[0][prompt_tokens:]
         completion_tokens = int(gen_ids.shape[0])
         decoded = self.tokenizer.decode(gen_ids, skip_special_tokens=True)
         clipped, hit = cut_at_stop(decoded, self.stop_text)
+
+        if stopper is not None and stopper.hit:
+            finish_reason = "deadline"
+        else:
+            finish_reason = "stop" if completion_tokens < max_new_tokens else "length"
 
         return Generation(
             text=clipped,
@@ -168,7 +221,7 @@ class TransformersBackend:
             completion_tokens=completion_tokens,
             elapsed_seconds=round(time.perf_counter() - started, 6),
             hit_stop=hit,
-            finish_reason="stop" if completion_tokens < max_new_tokens else "length",
+            finish_reason=finish_reason,
         )
 
     def peak_memory_gb(self) -> float | None:
