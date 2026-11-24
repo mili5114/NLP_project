@@ -11,13 +11,15 @@
 
 from __future__ import annotations
 
+import dataclasses
 import json
 import tempfile
+import time
 import unittest
 from pathlib import Path
 
 from src.feedback.baselines import feedback_official_output, feedback_trace_first
-from src.runtime.backend import FakeBackend
+from src.runtime.backend import FakeBackend, Generation
 from src.runtime.config import load_course_config
 from src.runtime.runner import build_system_prompt, run_episode
 from src.runtime.tasks import get_task
@@ -36,6 +38,31 @@ SETTINGS = {
 
 def action(code: str) -> str:
     return f"Action:\n{code}\nEnd Action"
+
+
+class DeadlineBackend(FakeBackend):
+    """模拟慢模型：一次生成跨过任务截止时刻，返回 finish_reason=deadline。
+
+    真实后端用 Transformers 的 StoppingCriteria 在 180s 处截断；这里用 sleep 把
+    task_seconds 缩到 0.2s，复现同一语义（不必占 GPU）。
+    """
+
+    def __init__(self, *, delay: float, **kwargs) -> None:
+        super().__init__(**kwargs)
+        self.delay = delay
+
+    def generate(self, messages, *, max_new_tokens: int, deadline: float | None = None):
+        time.sleep(self.delay)
+        gen = super().generate(messages, max_new_tokens=max_new_tokens, deadline=deadline)
+        cut = deadline is not None and time.monotonic() >= deadline
+        return Generation(
+            text=gen.text,
+            prompt_tokens=gen.prompt_tokens,
+            completion_tokens=gen.completion_tokens,
+            elapsed_seconds=self.delay,
+            hit_stop=gen.hit_stop,
+            finish_reason="deadline" if cut else gen.finish_reason,
+        )
 
 
 class EpisodeTest(unittest.TestCase):
@@ -121,6 +148,87 @@ class EpisodeTest(unittest.TestCase):
         self.assertEqual(len(set(backend.seen_deadlines)), 1)  # 同一集内截止时刻不变
         # 截止时刻 = episode 起点 + task_seconds，必然在未来一点的位置
         self.assertGreater(backend.seen_deadlines[0], 0)
+
+    def _short_task_cfg(self, seconds: float):
+        raw = {**self.cfg.raw, "limits": {**self.cfg.raw["limits"], "task_seconds": seconds}}
+        return dataclasses.replace(self.cfg, raw=raw)
+
+    def test_deadline_cut_records_generation_stop_and_persist_separately(self) -> None:
+        """180s 到点截断：这一轮照常落盘，但不执行动作、不进最终轮。
+
+        同时验证日志能把"生成停止"和"最终落盘"分开（课程 180s 是任务截止，
+        185s 只是含停止/同步/落盘的工程检查线）。
+        """
+        cfg = self._short_task_cfg(0.2)
+        backend = DeadlineBackend(
+            delay=0.3,
+            replies=[action("print('should not run')"), "Answer: 1"],
+            stop_text=cfg.stop_text,
+        )
+        tmp = tempfile.mkdtemp(prefix="nlp-test-")
+        result = run_episode(
+            task_id=TASK, condition="A", cfg=cfg, backend=backend, runs_root=tmp, split="DEV"
+        )
+        ep = result["episode"]
+        self.assertEqual(ep["termination_reason"], "task_timeout")
+        self.assertEqual(ep["status"], "timeout")
+        self.assertIsNone(ep["final_answer"])
+        self.assertEqual(ep["model_calls"], 1, "时间耗尽后不得再请求最终轮")
+        self.assertEqual(ep["tool_attempts_executed"], 0, "被截止的轮次不执行动作")
+
+        lines = Path(result["turns_path"]).read_text(encoding="utf-8").splitlines()
+        self.assertEqual(len(lines), 1)
+        turn = json.loads(lines[0])
+        self.assertTrue(turn["cut_by_deadline"])
+        self.assertEqual(turn["finish_reason"], "deadline")
+        self.assertIsNone(turn["action"])
+        self.assertEqual(
+            turn["feedback_metadata"]["note"], "generation_cut_by_task_timeout"
+        )
+
+        ep_json = json.loads(Path(result["episode_path"]).read_text(encoding="utf-8"))
+        self.assertEqual(ep_json["task_seconds_limit"], 0.2)
+        self.assertGreaterEqual(ep_json["generation_stopped_task_seconds"], 0.2)
+        self.assertGreaterEqual(
+            ep_json["episode_written_task_seconds"],
+            ep_json["generation_stopped_task_seconds"],
+        )
+        self.assertGreaterEqual(ep_json["post_generation_seconds"], 0.0)
+        self.assertLess(ep_json["post_generation_seconds"], 1.0, "落盘开销应是毫秒级")
+        self.assertTrue(ep_json["deadline_exceeded"])
+        self.assertIsNotNone(ep_json["generation_stopped_at"])
+        self.assertIsNotNone(ep_json["episode_written_at"])
+
+    def test_timing_fields_present_on_normal_episode(self) -> None:
+        result, _root, _backend = self.run_episode([action("print(1)"), "Answer: 7"])
+        ep = json.loads(Path(result["episode_path"]).read_text(encoding="utf-8"))
+        for key in (
+            "task_started_at",
+            "task_deadline_at",
+            "task_seconds_limit",
+            "generation_stopped_at",
+            "generation_stopped_task_seconds",
+            "last_generation_finish_reason",
+            "episode_written_at",
+            "episode_written_task_seconds",
+            "post_generation_seconds",
+            "deadline_overrun_seconds",
+            "deadline_exceeded",
+        ):
+            self.assertIn(key, ep)
+        self.assertFalse(ep["deadline_exceeded"])
+        self.assertEqual(ep["deadline_overrun_seconds"], 0)
+        self.assertLessEqual(ep["generation_stopped_at"], ep["episode_written_at"])
+        self.assertGreaterEqual(
+            ep["episode_written_task_seconds"], ep["generation_stopped_task_seconds"]
+        )
+
+        turn = json.loads(
+            Path(result["turns_path"]).read_text(encoding="utf-8").splitlines()[0]
+        )
+        self.assertIn("generation_seconds", turn)
+        self.assertFalse(turn["cut_by_deadline"])
+        self.assertEqual(turn["finish_reason"], "stop")
 
     def test_no_answer_records_null(self) -> None:
         replies = [action("print('thinking')")] * (self.cfg.limits.interaction_turns + 5)
