@@ -146,3 +146,22 @@ Thumbs.db
 !/runs/dev_full_v3/DEV/B/**/episode.json
 !/runs/dev_full_v3/DEV/B/**/manifest.json
 !/runs/dev_full_v3/DEV/B/**/turns.jsonl
+
+# 2026-11-24: 完整 DEV 基线 v4（16×A/B=32，代码 8be4109，审计格式）：当前基线
+!/runs/dev_full_v4/
+!/runs/dev_full_v4/index.jsonl
+!/runs/dev_full_v4/scored.jsonl
+!/runs/dev_full_v4/audit.json
+!/runs/dev_full_v4/stats.md
+!/runs/dev_full_v4/jobs/
+!/runs/dev_full_v4/DEV/
+!/runs/dev_full_v4/DEV/A/
+!/runs/dev_full_v4/DEV/A/*/
+!/runs/dev_full_v4/DEV/A/**/episode.json
+!/runs/dev_full_v4/DEV/A/**/manifest.json
+!/runs/dev_full_v4/DEV/A/**/turns.jsonl
+!/runs/dev_full_v4/DEV/B/
+!/runs/dev_full_v4/DEV/B/*/
+!/runs/dev_full_v4/DEV/B/**/episode.json
+!/runs/dev_full_v4/DEV/B/**/manifest.json
+!/runs/dev_full_v4/DEV/B/**/turns.jsonl
