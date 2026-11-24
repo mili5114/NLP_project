@@ -115,3 +115,34 @@ Thumbs.db
 # 只提交 hash 清单，C 用同一脚本本地生成后按 content_sha256 交叉校验。
 /references/offline_reference_v*.json
 !/references/offline_reference_v*.manifest.json
+
+# 2026-11-24: v2 修复验证（180s 截止 + 最终轮，trade A/B）
+!/runs/dev_fix_check_v2/
+!/runs/dev_fix_check_v2/DEV/
+!/runs/dev_fix_check_v2/DEV/A/
+!/runs/dev_fix_check_v2/DEV/A/*/
+!/runs/dev_fix_check_v2/DEV/A/**/episode.json
+!/runs/dev_fix_check_v2/DEV/A/**/manifest.json
+!/runs/dev_fix_check_v2/DEV/A/**/turns.jsonl
+!/runs/dev_fix_check_v2/DEV/B/
+!/runs/dev_fix_check_v2/DEV/B/*/
+!/runs/dev_fix_check_v2/DEV/B/**/episode.json
+!/runs/dev_fix_check_v2/DEV/B/**/manifest.json
+!/runs/dev_fix_check_v2/DEV/B/**/turns.jsonl
+
+# 2026-11-24: 完整 DEV 基线（16 任务 × A/B = 32 槽位，协议 7af057d）；只入 episode/manifest/turns 与索引、评分结果
+!/runs/dev_full_v3/
+!/runs/dev_full_v3/index.jsonl
+!/runs/dev_full_v3/scored.jsonl
+!/runs/dev_full_v3/stats.md
+!/runs/dev_full_v3/DEV/
+!/runs/dev_full_v3/DEV/A/
+!/runs/dev_full_v3/DEV/A/*/
+!/runs/dev_full_v3/DEV/A/**/episode.json
+!/runs/dev_full_v3/DEV/A/**/manifest.json
+!/runs/dev_full_v3/DEV/A/**/turns.jsonl
+!/runs/dev_full_v3/DEV/B/
+!/runs/dev_full_v3/DEV/B/*/
+!/runs/dev_full_v3/DEV/B/**/episode.json
+!/runs/dev_full_v3/DEV/B/**/manifest.json
+!/runs/dev_full_v3/DEV/B/**/turns.jsonl
