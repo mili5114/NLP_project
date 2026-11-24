@@ -168,14 +168,27 @@ def run_episode(
         feedback_text: str | None,
         feedback_metadata: dict[str, Any] | None,
         is_final: bool,
+        produced_answer: bool = False,
         exec_seconds: float = 0.0,
     ) -> None:
+        """写一行 turns.jsonl。
+
+        字段名与 `docs/interfaces.md` §3 及 C 的 `turns_reader.REQUIRED_TURN_FIELDS` 对齐：
+        `raw_model_text` / `events` / `feedback` / `produced_final_answer` / `is_final_answer_turn`。
+        两个“最终回答”概念分开记：交互轮直接给出 Answer 时 `produced_final_answer=True`
+        且 `is_final_answer_turn=False`（仍受 384 限制）；预算耗尽后追加的仅回答轮
+        `is_final_answer_turn=True`（受 128 限制）。
+        """
         nonlocal total_input_tokens, total_output_tokens, model_calls
         total_input_tokens += int(gen.prompt_tokens)
         total_output_tokens += int(gen.completion_tokens)
         model_calls += 1
+        elapsed = round(float(gen.elapsed_seconds) + exec_seconds, 6)
         writer.write_turn(
             {
+                # turn_index 由 EpisodeWriter 统一编号（1 起、逐行递增），这里不要覆盖。
+                "is_final_answer_turn": is_final,
+                "produced_final_answer": produced_answer,
                 "messages": snapshot,
                 "generation_settings": {
                     "max_new_tokens": max_new_tokens,
@@ -184,17 +197,19 @@ def run_episode(
                     "stop_text": cfg.stop_text,
                     "is_final_turn": is_final,
                 },
-                "raw_text": gen.text,
+                "raw_model_text": gen.text,
                 "parsed": parsed,
+                "parsed_action": parsed,
                 "action": action,
-                "tool_events": events,
+                "events": events,
                 "python_output": python_output,
-                "feedback_text": feedback_text,
+                "feedback": feedback_text,
                 "feedback_metadata": feedback_metadata,
                 "input_tokens": int(gen.prompt_tokens),
                 "output_tokens": int(gen.completion_tokens),
                 # elapsed_seconds 含本轮代码块执行；generation_seconds 只是模型生成耗时。
-                "elapsed_seconds": round(float(gen.elapsed_seconds) + exec_seconds, 6),
+                "elapsed_seconds": elapsed,
+                "wall_seconds": elapsed,
                 "generation_seconds": round(float(gen.elapsed_seconds), 6),
                 "finish_reason": gen.finish_reason,
                 "cut_by_deadline": gen.finish_reason == "deadline",
@@ -247,6 +262,7 @@ def run_episode(
                 feedback_text=None,
                 feedback_metadata=None,
                 is_final=False,
+                produced_answer=True,
             )
             break
 
@@ -359,6 +375,7 @@ def run_episode(
                     feedback_text=None,
                     feedback_metadata={"note": "final_answer_only_turn"},
                     is_final=True,
+                    produced_answer=parsed["type"] == "answer",
                 )
             else:
                 # 上下文/生成预算真的耗尽到连 128 的最终轮都放不下。
@@ -386,6 +403,10 @@ def run_episode(
         "tool_attempts_executed": observer.executed,
         "tool_attempts_blocked": observer.blocked,
         "config_sha256": cfg.hashes.get("runtime_settings.json"),
+        # C 的审计要求每份正式记录自带版本三元组，不只靠 manifest：
+        # 代码提交与模型 revision 逐条核对，缺任一项即 FAIL。
+        "code_commit": _git_head(),
+        "model_revision": cfg.model["revision"],
     }
     written_wall = time.time()
     written_task_seconds = time.monotonic() - budget.started_at

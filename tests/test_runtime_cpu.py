@@ -274,7 +274,7 @@ class EpisodeTest(unittest.TestCase):
         self.assertIn("a_ok= True", first["python_output"])
         self.assertIn("b_ok= True", first["python_output"])
         self.assertIn("e_is_none= True", first["python_output"])
-        self.assertEqual(first["tool_events"][-1]["execution_status"], "blocked")
+        self.assertEqual(first["events"][-1]["execution_status"], "blocked")
 
     def test_task_level_limit_32(self) -> None:
         code = "find_flights('E', 'A', '2023-12-25')\n" * 4
@@ -295,7 +295,31 @@ class EpisodeTest(unittest.TestCase):
         self.assertIn("NameError", first["python_output"])
         self.assertEqual(result2["episode"]["status"], "completed")
 
-    # ---------- 记录里不能有答案 ----------
+    # ---------- 记录契约：必须被 C 的审计读取器直接接受 ----------
+    def test_record_matches_audit_contract(self) -> None:
+        from src.evaluation.turns_reader import read_turns
+
+        result, _root, _backend = self.run_episode([action("print(1)"), "Answer: 3"])
+        turns = read_turns(result["turns_path"])  # 缺字段/类型错会抛 InputError
+        self.assertEqual([t["turn_index"] for t in turns], list(range(1, len(turns) + 1)))
+        produced = [t for t in turns if t["produced_final_answer"]]
+        self.assertEqual(len(produced), 1)
+        self.assertFalse(produced[0]["is_final_answer_turn"])  # 交互轮答出，仍受 384
+        ep = result["episode"]
+        self.assertRegex(str(ep.get("code_commit")), r"^[0-9a-f]{40}$")
+        self.assertEqual(ep.get("model_revision"), self.cfg.model["revision"])
+
+    def test_final_only_turn_is_flagged(self) -> None:
+        from src.evaluation.turns_reader import read_turns
+
+        replies = [action("print(1)") for _ in range(12)] + ["Answer: 7"]
+        result, _root, _backend = self.run_episode(replies)
+        turns = read_turns(result["turns_path"])
+        self.assertTrue(turns[-1]["is_final_answer_turn"])
+        self.assertTrue(turns[-1]["produced_final_answer"])
+        self.assertEqual([i for i, t in enumerate(turns) if t["is_final_answer_turn"]], [len(turns) - 1])
+        self.assertEqual(result["episode"]["final_answer"], "7")
+
     def test_no_reference_leak(self) -> None:
         result, root, _backend = self.run_episode([action("print('x')"), "Answer: 450"])
         episode_dir = Path(result["episode_path"]).parent

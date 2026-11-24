@@ -51,7 +51,7 @@ class EpisodeWriter:
     def write_turn(self, turn: dict[str, Any]) -> None:
         if self._turns_fh is None:
             raise RuntimeError("writer 未 open()")
-        record = {"turn_index": self.turn_count, **turn}
+        record = {"turn_index": self.turn_count + 1, **turn}
         self._turns_fh.write(json.dumps(record, ensure_ascii=False) + "\n")
         self._turns_fh.flush()
         self.turn_count += 1
