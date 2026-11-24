@@ -2,6 +2,8 @@
 
 审查日期：2026-11-23。输入仓库 main：`38198ea`。本轮不读取离线标准答案，不计算正确率，不处理 EVAL 轨迹，不修改原始记录或 A/B 模块。
 
+> 2026-11-24 更新：A 已在 beacbfc 修复签名与预留最终轮代码；新日志尚待上传。C 已修复下文第4项 blocked 审计误报。最新状态见 [后续核验](C_FOLLOWUP_20261124.md)，本文件保留首轮历史证据。
+
 ## 完成的工作
 
 - 新增 `src/evaluation/runtime_adapter.py`，显式适配 A 的 runtime schema `1`：0-based turn_index 转为 1-based；`parsed.type=answer` 映射 produced_final_answer；`generation_settings.is_final_turn` 单独映射 final-only；raw_text/tool_events/feedback_text 映射离线字段。

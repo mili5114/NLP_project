@@ -17,6 +17,7 @@ sys.path.insert(0, str(ROOT))
 from src.evaluation.io import read_json, read_jsonl, write_json, write_jsonl
 from src.evaluation.errors import EvaluationError, InputError
 from src.evaluation.runtime_adapter import adapt_episode, adapt_turn, prompt_signature_issues
+from src.evaluation.tool_audit import audit_tool_attempts
 
 
 def prepare(root: Path, source: Path, out: Path) -> dict:
@@ -28,6 +29,7 @@ def prepare(root: Path, source: Path, out: Path) -> dict:
     tasks = read_json(root / "configs/course/split_manifest.json")["DEV"]
     settings = read_json(root / "configs/course/runtime_settings.json")
     rows, excluded, findings, seen = [], [], [], set()
+    tool_totals = Counter()
     for path in sorted(source.rglob("episode.json")):
         if "pilot_14051965" in path.parts:
             excluded.append({"path": str(path), "reason": "documented pre-warmup pilot"})
@@ -46,6 +48,16 @@ def prepare(root: Path, source: Path, out: Path) -> dict:
         if [t.get("turn_index") for t in raw] != list(range(len(raw))):
             raise InputError(f"noncontiguous runtime turn sequence {turns_path}")
         turns = [adapt_turn(t) for t in raw]
+        tools = audit_tool_attempts(turns, settings["limits"])
+        for key in ("attempted", "executed", "blocked"):
+            tool_totals[key] += tools[key]
+        for problem in tools["issues"]:
+            findings.append({"task_id": ep["task_id"], "condition": ep["condition"],
+                             **problem, "owner": "A"})
+        for field, key in (("tool_attempts_executed", "executed"),
+                           ("tool_attempts_blocked", "blocked")):
+            if type(ep.get(field)) is not int or ep[field] != tools[key]:
+                raise InputError(f"inconsistent {field} at {path}")
         for metric in ("input_tokens", "output_tokens"):
             values = [t.get(metric) for t in turns]
             if any(type(v) is not int or v < 0 for v in values) or sum(values) != ep.get(metric):
@@ -86,9 +98,11 @@ def prepare(root: Path, source: Path, out: Path) -> dict:
         "expected": len(expected), "recorded": len(seen),
         "missing": [list(k) for k in sorted(expected - seen)], "excluded": excluded,
         "findings": findings, "finding_counts": dict(Counter(f["code"] for f in findings)),
+        "tool_totals": dict(tool_totals),
         "limitations": ["EVAL records are not processed", "B frozen package not present",
                         "config_sha256 describes course settings, not full condition configuration",
-                        "Tool, context, timing and answer-isolation compliance need separate validation"],
+                        "Tool audit validates recorded events, not unlogged execution or side effects",
+                        "Context, timing and answer-isolation compliance need separate validation"],
     }
     write_jsonl(out / "index.jsonl", rows)
     write_json(out / "preflight.json", report)

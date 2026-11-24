@@ -24,7 +24,8 @@ class PrepareRecordsTests(unittest.TestCase):
                  {"initial_contract": "contract", "limits": {"total_generated_tokens": 3072}})
         self.ep = dict(schema_version="1", synthetic=False, run_id="r", task_id="group/task",
                        split="DEV", condition="A", config_sha256="h", input_tokens=10,
-                       output_tokens=2, model_calls=1, final_answer="42", termination_reason="answer")
+                       output_tokens=2, model_calls=1, final_answer="42", termination_reason="answer",
+                       tool_attempts_executed=0, tool_attempts_blocked=0)
         self.base = "runs/DEV/A/task/"
         self.put(self.base + "episode.json", self.ep)
         self.put(self.base + "manifest.json", {**self.ep, "team_commit": "commit",

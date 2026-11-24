@@ -85,3 +85,7 @@ python scripts/plot_results.py --summary results/synthetic/summary.json \
 - 新增 9 个适配/输入保护测试，连同原 C 的56项共65项通过。
 - 检出课程要求的提示签名尚未修正及两个预留最终轮出口待确认问题；详见 docs/C_REAL_LOG_REVIEW_20261123.md。未把结构检查当正式审计 PASS，未评分正确率，未读取 EVAL 轨迹，未运行模型。
 - A 已有真实平台/日志；当前待交接重点变为修复后的协议一致数据和私有 reference 导出，B 的冻结包仍待交付。此前“没有真实日志”的状态已过时。
+
+## 7. 2026-11-24：blocked 审计修正与 A 修复复查
+
+已同步 A 的 beacbfc，确认提示签名与预留最终轮代码修复，但尚无对应新日志。新增 tool_audit.py，按顺序验证实际执行与 blocked，修正把超额 blocked 本身判为违规的误报，接入 audit.py/preparation 并核验 episode 计数。C 的76项测试通过。旧32条 DEV 的282次尝试=276执行+6 blocked，计数一致；只作旧数据诊断，不是正式认证。详见 docs/C_FOLLOWUP_20261124.md。

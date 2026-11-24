@@ -14,6 +14,7 @@ from typing import Any
 from .errors import InputError
 from .io import episode_fingerprint, is_synthetic_record, read_json
 from .turns_reader import read_turns, summarize_turn_usage
+from .tool_audit import audit_tool_attempts
 
 OWNER_A = "A (runtime / online logs)"
 OWNER_B = "B (method / frozen config)"
@@ -359,15 +360,18 @@ def audit_episodes(
                                   f"turn {turn['turn_index']} output_tokens={out} > {cap} "
                                   f"(is_final_answer_turn={turn['is_final_answer_turn']})",
                                   OWNER_A)
-                    per_action = limits.get("tool_attempts_per_action")
-                    if per_action is not None:
-                        turn_by_index = {str(t["turn_index"]): t for t in turns}
-                        for index, count in usage["tool_events_per_turn"].items():
-                            turn_obj = turn_by_index.get(index, {})
-                            if count > int(per_action) and not turn_obj.get("is_final_answer_turn"):
-                                issue(errors, "tool_attempts_per_action_exceeded", ep,
-                                      f"turn {index} has {count} tool events > {per_action}",
-                                      OWNER_A)
+                    tools = audit_tool_attempts(turns, limits)
+                    for problem in tools["issues"]:
+                        issue(errors, problem["code"], ep, problem["detail"], OWNER_A)
+                    for field, actual in (("tool_attempts_executed", tools["executed"]),
+                                          ("tool_attempts_blocked", tools["blocked"])):
+                        declared = ep.get(field)
+                        if type(declared) is not int or declared < 0:
+                            issue(errors, "invalid_tool_counter", ep,
+                                  f"{field} must be a nonnegative integer", OWNER_A)
+                        elif declared != actual:
+                            issue(errors, "tool_counter_mismatch", ep,
+                                  f"{field}={declared}, event count={actual}", OWNER_A)
                     total_cap = limits.get("total_generated_tokens")
                     if total_cap is not None and usage["output_tokens"] is not None:
                         if usage["output_tokens"] > int(total_cap):
@@ -380,10 +384,10 @@ def audit_episodes(
         if per_task is not None:
             executed = ep.get("tool_attempts_executed")
             blocked = ep.get("tool_attempts_blocked")
-            if isinstance(executed, int) and isinstance(blocked, int):
-                if executed + blocked > int(per_task):
+            if type(executed) is int and type(blocked) is int:
+                if executed > int(per_task):
                     issue(errors, "tool_attempts_per_task_exceeded", ep,
-                          f"executed+blocked={executed + blocked} > {per_task}", OWNER_A)
+                          f"executed={executed} > {per_task}; blocked attempts do not execute", OWNER_A)
         task_seconds = limits.get("task_seconds")
         wall = ep.get("wall_seconds")
         if task_seconds is not None and isinstance(wall, (int, float)) and not isinstance(wall, bool):

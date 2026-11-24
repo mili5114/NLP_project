@@ -227,6 +227,34 @@ class FinalAnswerSemanticsTests(unittest.TestCase):
         self.assertEqual(report["status"], "PASS")
 
 
+class ToolCounterIntegrationTests(unittest.TestCase):
+    def run_case(self, statuses, executed, blocked):
+        with tempfile.TemporaryDirectory() as tmp:
+            events = [{"index": i, "execution_status": s, "result_repr": None}
+                      for i, s in enumerate(statuses, 1)]
+            turns = [make_turn(1, output_tokens=10, events=events),
+                     make_turn(2, output_tokens=10, produced=True)]
+            ep = write_case(tmp, turns, extra_ep={"tool_attempts_executed": executed,
+                                                "tool_attempts_blocked": blocked})
+            settings = read_json(REPO_ROOT / "configs/course/runtime_settings.json")
+            return audit_episodes([ep], split="SYNTHETIC", conditions=["A"],
+                                  allow_synthetic=True, synthetic_tasks=["synthetic/only"],
+                                  settings=settings)
+
+    def test_legal_blocked_attempts_do_not_fail_audit(self):
+        report = self.run_case(["ok"] * 4 + ["blocked"] * 35, 4, 35)
+        self.assertEqual(codes(report), [])
+        self.assertEqual(report["status"], "PASS")
+
+    def test_counters_must_match_events(self):
+        report = self.run_case(["ok", "error"], 1, 0)
+        self.assertIn("tool_counter_mismatch", codes(report))
+
+    def test_unblocked_fifth_call_fails(self):
+        report = self.run_case(["ok"] * 5, 5, 0)
+        self.assertIn("unblocked_over_budget_tool", codes(report))
+
+
 class FormalVersionTests(unittest.TestCase):
     """Formal audits must verify versions instead of skipping absent fields."""
 
