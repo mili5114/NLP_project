@@ -19,6 +19,7 @@
 
 ## Reading recipes
 
+- 整目录统计（有答案/无答案、终止原因、blocked、中位耗时、逐任务 A/B）：`python scripts/run_stats.py --runs runs/dev_full_v3/DEV`（`pilot_*` 目录自动跳过）。
 - Task A/B comparison for the demo: `runs/dev_baselines/DEV/A/*<task>*` vs `runs/dev_baselines/DEV/B/*<task>*`, diff the `feedback_text` fields turn by turn.
 - Failure classification: see `docs/failure_taxonomy.md`.
 - Environment provenance of any episode: read its `manifest.json`, cross-check against `configs/versions.json`.
