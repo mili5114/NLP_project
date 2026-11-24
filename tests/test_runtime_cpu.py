@@ -19,7 +19,8 @@ from pathlib import Path
 from src.feedback.baselines import feedback_official_output, feedback_trace_first
 from src.runtime.backend import FakeBackend
 from src.runtime.config import load_course_config
-from src.runtime.runner import run_episode
+from src.runtime.runner import build_system_prompt, run_episode
+from src.runtime.tasks import get_task
 
 TASK = "travel_itinerary_planning/cheapest_new_york_trip"
 SETTINGS = {
@@ -86,6 +87,28 @@ class EpisodeTest(unittest.TestCase):
         self.assertEqual(ep["final_answer"], "42")
         self.assertEqual(ep["model_calls"], self.cfg.limits.interaction_turns + 1)
         self.assertEqual(backend.calls, self.cfg.limits.interaction_turns + 1)
+
+    def test_reserved_final_turn_used_when_token_budget_low(self) -> None:
+        """生成预算只剩为最终轮预留的 128 时，必须进最终轮而不是直接判耗尽。
+
+        复现 PR #3 审查发现的问题：optimizing_bulk_purchase_discounts A/B
+        终止于 token_budget_exhausted，预留的 128 token 没有进入最终回答轮。
+        """
+        # 每轮回复在 stop 截断后恰好 368 字符（"Action:\n" + 360）→ 每轮计费 368 token
+        filler = "# " + "x" * 358
+        self.assertEqual(len("Action:\n" + filler), 368)
+        replies = [action(filler)] * 8 + ["Answer: 42"]
+        result, _root, backend = self.run_episode(replies)
+        ep = result["episode"]
+        self.assertEqual(ep["termination_reason"], "final_answer_after_tokens_exhausted")
+        self.assertEqual(ep["final_answer"], "42")
+        # 8 个交互轮 + 1 个最终轮；旧逻辑会在第 9 次分配前直接终止（只有 8 次调用）
+        self.assertEqual(ep["model_calls"], 9)
+        self.assertEqual(backend.calls, 9)
+        lines = Path(result["turns_path"]).read_text(encoding="utf-8").splitlines()
+        last = json.loads(lines[-1])
+        self.assertTrue(last["generation_settings"]["is_final_turn"])
+        self.assertEqual(last["generation_settings"]["max_new_tokens"], 128)
 
     def test_no_answer_records_null(self) -> None:
         replies = [action("print('thinking')")] * (self.cfg.limits.interaction_turns + 5)
@@ -176,6 +199,30 @@ class EpisodeTest(unittest.TestCase):
         self.assertEqual(
             ep["input_tokens"], sum(json.loads(x)["input_tokens"] for x in lines)
         )
+
+
+class PromptSignatureTest(unittest.TestCase):
+    """课程附件 §3：提示里的工具签名必须与真实函数一致（PR #3 审查发现项）。"""
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls.cfg = load_course_config()
+
+    def test_find_flights_signature_fixed(self) -> None:
+        task = get_task("travel_itinerary_planning/cheapest_new_york_trip")
+        prompt = build_system_prompt(task, self.cfg)
+        self.assertIn(
+            "find_flights(from_location: str, to_location: str, date: str)", prompt
+        )
+        self.assertNotIn("find_flights(destination", prompt)
+
+    def test_message_decoder_s_params_fixed(self) -> None:
+        task = get_task("message_decoder/specific_decoded_character")
+        prompt = build_system_prompt(task, self.cfg)
+        self.assertIn("reverse_string(s: str)", prompt)
+        self.assertIn("string_length(s: str)", prompt)
+        self.assertNotIn("reverse_string(string", prompt)
+        self.assertNotIn("string_length(string", prompt)
 
 
 class FeedbackTest(unittest.TestCase):

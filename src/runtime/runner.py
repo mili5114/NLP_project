@@ -190,7 +190,9 @@ def run_episode(
         prompt_tokens = _count_tokens(backend, messages)
         alloc = budget.allocate(prompt_tokens=prompt_tokens)
         if alloc.max_new_tokens <= 0:
-            termination = "token_budget_exhausted"
+            # 交互轮分不到生成预算（生成预算只剩为最终轮预留的 128，或上下文已满）：
+            # 不在这里判 token_budget_exhausted，而是跳出循环、带着预留预算进最终轮
+            # （课程附件 §2：交互轮始终为最终答案预留 128 token）。
             break
 
         gen = backend.generate(messages, max_new_tokens=alloc.max_new_tokens)
@@ -261,37 +263,42 @@ def run_episode(
             is_final=False,
         )
 
-    # ---------- 最终轮（仅当因预算耗尽而停下） ----------
+    # ---------- 最终轮（仅当交互阶段结束时还没有 termination：轮次/token/上下文耗尽） ----------
     if termination is None:
-        exhausted_by = "turns" if budget.turns_left == 0 else "tokens"
-        messages.append({"role": "user", "content": cfg.final_answer_request})
-        snapshot = [dict(m) for m in messages]
-        prompt_tokens = _count_tokens(backend, messages)
-        alloc = budget.allocate(prompt_tokens=prompt_tokens, is_final=True)
-
-        if alloc.max_new_tokens > 0:
-            gen = backend.generate(messages, max_new_tokens=alloc.max_new_tokens)
-            budget.charge(completion_tokens=gen.completion_tokens, is_final=True)
-            parsed = task.parse_generation(gen.text)
-            if parsed["type"] == "answer":
-                final_answer = parsed["content"]
-                termination = f"final_answer_after_{exhausted_by}_exhausted"
-            else:
-                termination = f"no_answer_after_{exhausted_by}_exhausted"
-            _record_turn(
-                snapshot=snapshot,
-                gen=gen,
-                parsed=parsed,
-                max_new_tokens=alloc.max_new_tokens,
-                action=None,
-                events=[],
-                python_output=None,
-                feedback_text=None,
-                feedback_metadata={"note": "final_answer_only_turn"},
-                is_final=True,
-            )
+        if budget.task_expired:
+            # 时间上限在最后一轮执行后到期：时间耗尽不允许再请求模型。
+            termination = "task_timeout"
         else:
-            termination = f"no_answer_after_{exhausted_by}_exhausted"
+            exhausted_by = "turns" if budget.turns_left == 0 else "tokens"
+            messages.append({"role": "user", "content": cfg.final_answer_request})
+            snapshot = [dict(m) for m in messages]
+            prompt_tokens = _count_tokens(backend, messages)
+            alloc = budget.allocate(prompt_tokens=prompt_tokens, is_final=True)
+
+            if alloc.max_new_tokens > 0:
+                gen = backend.generate(messages, max_new_tokens=alloc.max_new_tokens)
+                budget.charge(completion_tokens=gen.completion_tokens, is_final=True)
+                parsed = task.parse_generation(gen.text)
+                if parsed["type"] == "answer":
+                    final_answer = parsed["content"]
+                    termination = f"final_answer_after_{exhausted_by}_exhausted"
+                else:
+                    termination = f"no_answer_after_{exhausted_by}_exhausted"
+                _record_turn(
+                    snapshot=snapshot,
+                    gen=gen,
+                    parsed=parsed,
+                    max_new_tokens=alloc.max_new_tokens,
+                    action=None,
+                    events=[],
+                    python_output=None,
+                    feedback_text=None,
+                    feedback_metadata={"note": "final_answer_only_turn"},
+                    is_final=True,
+                )
+            else:
+                # 上下文/生成预算真的耗尽到连 128 的最终轮都放不下。
+                termination = f"no_answer_after_{exhausted_by}_exhausted"
 
     if final_answer is not None:
         status = "completed"
