@@ -11,12 +11,25 @@ from __future__ import annotations
 
 import contextlib
 import importlib
+import inspect
 import io
+import re
 import sys
 from pathlib import Path
 from typing import Any
 
 from .config import CourseConfig, repo_root
+
+# 课程附件 §3：提示里的工具签名必须与真实函数一致。
+# 上游 m3tooleval 的 fn_metadata 与函数定义不符（find_flights 少一个参数、
+# reverse_string/string_length 参数名不是 s），在加载适配层统一改写，
+# third_party 原始文件保持不动，改动可追溯到这里。
+_COURSE_SIGNATURE_PARAMS: dict[str, str] = {
+    "find_flights": "from_location: str, to_location: str, date: str",
+    "reverse_string": "s: str",
+    "string_length": "s: str",
+}
+_SIGNATURE_RE = re.compile(r"\b(find_flights|reverse_string|string_length)\s*\(([^)]*)\)")
 
 
 def upstream_eval_dir(cfg: CourseConfig | None = None) -> Path:
@@ -43,6 +56,39 @@ def module_of(task_id: str) -> str:
     return task_id.split("/", 1)[0]
 
 
+def _verify_signature_matches_function(name: str, fn_signature: str, function: Any) -> None:
+    """改写后的提示签名必须与真实函数的参数名逐一对应，否则直接报错。"""
+    m = re.match(rf"{re.escape(name)}\s*\(([^)]*)\)", fn_signature.strip())
+    prompted = [p.split(":")[0].strip() for p in m.group(1).split(",")] if m and m.group(1).strip() else []
+    actual = list(inspect.signature(function).parameters)
+    if prompted != actual:
+        raise RuntimeError(
+            f"{name} 的提示签名 {fn_signature!r} 与真实函数参数 {actual} 不一致（课程附件 §3）"
+        )
+
+
+def _apply_course_signatures(task: Any) -> None:
+    """把 task.tools 里三个工具的 fn_signature 改成附件 §3 要求的形式。
+
+    带类型注释和不含注释的变体都覆盖；改写后与真实函数签名核对。
+    """
+    changed = False
+    tools: dict[str, Any] = {}
+    for tool_name, tool in task.tools.items():
+        sig = tool.fn_signature or ""
+        if _SIGNATURE_RE.search(sig):
+            new_sig = _SIGNATURE_RE.sub(
+                lambda m: f"{m.group(1)}({_COURSE_SIGNATURE_PARAMS[m.group(1)]})", sig
+            )
+            _verify_signature_matches_function(tool_name, new_sig, tool.function)
+            if new_sig != sig:
+                tool = tool._replace(fn_signature=new_sig)
+                changed = True
+        tools[tool_name] = tool
+    if changed:
+        task.tools = tools
+
+
 def load_tasks(module_name: str, *, reload: bool = True) -> dict[str, Any]:
     """导入（或重新导入）一个任务模块，返回 {task_id: Task}。
 
@@ -59,7 +105,10 @@ def load_tasks(module_name: str, *, reload: bool = True) -> dict[str, Any]:
     tasks = getattr(module, "TASKS", None)
     if not tasks:
         raise RuntimeError(f"模块 {module_name} 没有 TASKS")
-    return {t.name: t for t in tasks}
+    result = {t.name: t for t in tasks}
+    for task in result.values():
+        _apply_course_signatures(task)
+    return result
 
 
 def get_task(task_id: str) -> Any:

@@ -4,6 +4,17 @@
 > 记录入库于 commit `95ce5b0`。旧 pilot（1.3 tok/s 时代）**不计入**本表。
 > 本文只做"失败去哪了"的归因，不评分正确性（正确性等 C 的离线 scorer，步骤 18）。
 
+> **⚠ 2026-11-24 修订（PR #3 审查后）**：本文把工具 TypeError 称为"任务自身陷阱 / 天然素材"的口径**不再成立**。
+> 课程附件 §3 明确要求先修正提示签名：find_flights 应为 `(from_location, to_location, date)`，
+> reverse_string / string_length 参数应为 `s`。已在适配层修复（`src/runtime/tasks.py` 的
+> `_apply_course_signatures`，不改 third_party 原文件）。受影响首轮记录：DEV 中 8 条含旧 find_flights
+> 签名、6 条含旧 reverse_string/string_length 签名（有重合）；EVAL 亦有同类记录。首轮数据仅作诊断材料保留，
+> 不覆盖、不进入冻结后正式比较；一致基线待修复版本重跑。
+> 另外：DEV 的 trade_calculator/optimizing_bulk_purchase_discounts A/B 两条曾以
+> `token_budget_exhausted` 终止且未进入最终回答轮——这是 runner 的 `alloc<=0` 分支绕过了预留最终轮
+> （附件 §2 要求预留 128 token 给最终答案），已修复（交互轮分配为 0 时转入最终轮块）。
+> 本文表格保留的是**修复前**首轮数据的行为，仅供对照。
+
 ## 一、episode 终止语义分布
 
 | 终止原因 | DEV-A | DEV-B | EVAL-A | EVAL-B | 合计 | 语义 |
