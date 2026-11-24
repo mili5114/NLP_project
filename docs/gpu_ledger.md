@@ -1,24 +1,58 @@
-# GPU Ledger (Contributor A)
+# GPU 资源账目（贡献者 A）
 
-*One row per Slurm job, including failed and cancelled ones. Data from `sacct`, 2026-11-23.*
+## 0. 口径
 
-| Job | Date | Partition | GPU | Elapsed | Purpose | Outcome |
+- **GPU·h = Slurm `Elapsed` × 申请卡数**。排队时间不计；所有作业都只申请 1 张卡，所以 GPU·h 数值上等于墙钟小时。
+- **失败作业与预热都计入**总量（这是"花了多少卡时"，不是"有效实验多少卡时"）；被取消且从未启动的作业 `Elapsed=0`，单独列出、不计入。
+- 数据来源 `sacct -S 2026-11-21 -u aiaa4051_038 -X`，取数时间 2026-11-24 22:45。
+- 卡型：`i64m1tga40u` = NVIDIA A40 47.4 GB；`i64m1tga800u` = NVIDIA A800；`debug` = 30 分钟调试分区（同为 A40）。
+- 对应批次目录见 `runs/index.md`。
+
+## 1. 明细（按提交顺序）
+
+| 作业 | 用途 | 分区 / 卡 | 起–止 | Elapsed | GPU·h | 结果 |
 |---|---|---|---|---|---|---|
-| 14051595 | 11-22 | debug | a40 ×1 | 00:01:19 | Environment smoke test | COMPLETED |
-| 14051965 | 11-22 | i64m1tga40u | a40 ×1 | 00:10:19 | First real episode (pilot; 1.3 tok/s era, recorded task_timeout) | COMPLETED |
-| 14060163 | 11-22 | debug | a40 ×1 | 00:00:42 | Speed benchmark — crashed in `bench_speed.py` (tensor indexing bug) | FAILED |
-| 14060276 | 11-22 | i64m1tga40u | a40 ×1 | 00:00:01 | Speed benchmark — died in 1 s: `sbatch --wrap` runs `/bin/sh`, which cannot `source` conda | FAILED |
-| 14061564 | 11-22 | i64m1tga40u | a40 ×1 | 00:02:13 | Speed benchmark via proper `.sbatch`: confirmed 23.6–25.2 tok/s after FLA kernel install | COMPLETED |
-| 14062952 | 11-22 | i64m1tga40u | — | 00:00:00 | Duplicate auto-submitted by the monitoring automation; cancelled before start | CANCELLED |
-| 14062953 | 11-22 | i64m1tga40u | — | 00:00:00 | Duplicate auto-submitted by the monitoring automation; cancelled before start | CANCELLED |
-| 14062955 | 11-22 | i64m1tga40u | a40 ×1 | 00:11:55 | Step 17: DEV 16 tasks, condition A (job chain 1/4) | COMPLETED |
-| 14062956 | 11-22 | i64m1tga40u | a40 ×1 | 00:10:27 | Step 17: DEV 16 tasks, condition B (job chain 2/4) | COMPLETED |
-| 14062957 | 11-22 | i64m1tga40u | a40 ×1 | 00:24:54 | Step 17: EVAL 27 tasks, condition A (auto-triggered after 14062955) | COMPLETED |
-| 14062958 | 11-22 | i64m1tga40u | a40 ×1 | 00:17:19 | Step 17: EVAL 27 tasks, condition B (auto-triggered after 14062956) | COMPLETED |
-| 14072303 | 11-23 | i64m1tga40u | a40 ×1 | pending | Reproducibility check: re-run DEV-B `interstellar_trade_transaction` into `runs/repro_check/` | PENDING |
+| 14051568 | 冒烟（首次投错分区） | a800 | — | 0 | 0 | CANCELLED（未启动） |
+| 14051595 | 环境冒烟 `smoke.sbatch` | debug / A40 | 11-21 16:36:20–16:37:39 | 00:01:19 | 0.022 | COMPLETED |
+| 14051900 | 首次 runner 调试 | debug / A40 | 11-21 17:19:18–17:19:44 | 00:00:26 | 0.007 | FAILED |
+| 14051945 | 冒烟重投（撤销） | debug | — | 0 | 0 | CANCELLED（未启动） |
+| 14051965 | **pilot**：首个真实 episode（1.3 tok/s 时代） | A40 | 11-21 21:55:09–22:05:28 | 00:10:19 | 0.172 | COMPLETED（`task_timeout`，作故障证据保留） |
+| 14060089 | 速度基准（撤销） | A40 | — | 0 | 0 | CANCELLED（未启动） |
+| 14060163 | 速度基准（张量索引 bug） | debug / A40 | 11-22 15:17:46–15:18:28 | 00:00:42 | 0.012 | FAILED |
+| 14060276 | 速度基准（`sbatch --wrap` 无法 source conda） | A40 | 11-22 17:35:49–17:35:50 | 00:00:01 | 0.000 | FAILED |
+| 14061564 | 速度基准（确认 23.6–25.2 tok/s） | A40 | 11-22 19:45:56–19:48:09 | 00:02:13 | 0.037 | COMPLETED |
+| 14062952 | 监控自动重投的重复作业 | A40 | — | 0 | 0 | CANCELLED（未启动） |
+| 14062953 | 同上 | A40 | — | 0 | 0 | CANCELLED（未启动） |
+| 14062955 | 首轮 DEV-A（16 题）→ `runs/dev_baselines` | A40 | 11-23 07:51:30–08:03:25 | 00:11:55 | 0.199 | COMPLETED |
+| 14062956 | 首轮 DEV-B（16 题） | A40 | 11-23 08:03:25–08:13:52 | 00:10:27 | 0.174 | COMPLETED |
+| 14062957 | 首轮 EVAL-A（27 题） | A40 | 11-23 08:04:49–08:29:43 | 00:24:54 | 0.415 | COMPLETED |
+| 14062958 | 首轮 EVAL-B（27 题） | A40 | 11-23 08:14:12–08:31:31 | 00:17:19 | 0.289 | COMPLETED |
+| 14072303 | 复现检查（DEV-B 单题）→ `runs/repro_check` | A40 | 11-24 06:22:07–06:23:34 | 00:01:27 | 0.024 | COMPLETED |
+| 14086280 / 14086281 | v1 样例（服务器旧 HEAD，撤销重投） | A40 | — | 0 | 0 | CANCELLED（未启动） |
+| 14086329 / 14086330 | v1 样例：travel A/B → `runs/dev_fix_check` | A40 | 11-24 11:59–12:47 | 00:00:57 / 00:07:49 | 0.146 | COMPLETED |
+| 14089396 / 14089397 | v1 样例：trade A/B（`--export` 逗号截断后补跑） | A40 | 11-24 13:09–13:21 | 00:09:22 / 00:10:19 | 0.328 | COMPLETED |
+| 14089627 / 14089628 | 重复提交（撤销） | A40 | — | 0 | 0 | CANCELLED（未启动） |
+| 14093189 / 14093190 | v2 样例：trade A/B → `runs/dev_fix_check_v2` | A40 | 11-24 18:02:53–18:06:32 | 00:03:36 / 00:03:39 | 0.121 | COMPLETED |
+| 14100225 / 14100226 | v3 样例：message_decoder（排队时撤销） | A40 | — | 0 | 0 | CANCELLED（未启动） |
+| 14100267 / 14100268 | 完整 DEV 首投（排队时撤销，改分区） | A40 | — | 0 | 0 | CANCELLED（未启动） |
+| 14100305 / 14100306 | 完整 DEV 次投（排队时撤销，改 A800） | A800 | — | 0 | 0 | CANCELLED（未启动） |
+| 14100615 | 分区探测 `probe1` | A800 | — | 0 | 0 | CANCELLED（未启动） |
+| 14100661 / 14100662 | **完整 DEV-A**（8+8 题并行）→ `runs/dev_full_v3` | A800 | 11-24 22:44– | 运行中 | 待补 | RUNNING |
+| 14100663 / 14100664 | **完整 DEV-B**（8+8 题）→ 同上 | A800 | 排队（`MaxJobsPerAccount`） | 待补 | 待补 | PENDING |
 
-## Totals
+## 2. 累计
 
-- GPU hours consumed (successful + failed, excluding the two cancelled jobs that never started): **≈ 1.32 GPU·h** on A40.
-- Wasted GPU time (two failed benchmarks + the 1.3 tok/s pilot's slow path): ≈ 0.2 GPU·h — the pilot would have been ~10× faster with the kernel fix, which is exactly why it was root-caused before scaling up.
-- Failures: 2 (both execution-harness bugs, fixed; neither touched course configuration).
+| 项 | 值 |
+|---|---|
+| 已发生 GPU·h（14051595–14093190，含失败与预热） | **≈ 1.95 GPU·h**（17 个实际启动的作业） |
+| 其中失败作业 | 3 个（14051900、14060163、14060276），合计 ≈ 0.02 GPU·h |
+| 被取消、从未启动 | 13 个，`Elapsed=0`，不占 GPU |
+| 完整 DEV 32 槽位（进行中） | 预估 +0.5–1.0 GPU·h（A800，4 个半批作业） |
+
+课程上限 < 100 GPU-hours，当前用掉不到 2%。
+
+## 3. 备注
+
+- 排队时间与本账目无关，但实际等待远大于计算：首轮 4 个作业等待约 9.5 小时、计算 40 分钟；这是共享账号的常态，不是效率问题。
+- `pilot`（14051965）的 `task_timeout` 是缺少 FLA 内核导致的慢路径产物，不是协议结果，已在 `runs/index.md` 标注。
+- 完整 DEV 批次改用 A800 是为了缩短排队（A40 队列被同学占满），不影响课程协议；卡型不进 `config_fingerprint`。

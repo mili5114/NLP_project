@@ -321,6 +321,41 @@ class EpisodeTest(unittest.TestCase):
         )
 
 
+class BudgetLimitTest(unittest.TestCase):
+    """预算上限的边界：上下文、每轮 384、总 3072 里预留最终轮 128。"""
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls.limits = load_course_config().limits
+
+    def test_context_cap_zeroes_generation(self) -> None:
+        from src.runtime.budget import Budget
+
+        budget = Budget(self.limits)
+        alloc = budget.allocate(prompt_tokens=self.limits.context_tokens + 1)
+        self.assertEqual(alloc.remaining_context, 0)
+        self.assertEqual(alloc.max_new_tokens, 0)
+
+    def test_turn_cap_is_384_and_reserve_is_128(self) -> None:
+        from src.runtime.budget import Budget
+
+        budget = Budget(self.limits)
+        self.assertEqual(
+            budget.allocate(prompt_tokens=10).max_new_tokens,
+            self.limits.tokens_per_interaction,
+        )
+        budget.charge(
+            completion_tokens=self.limits.total_generated_tokens
+            - self.limits.final_answer_tokens
+        )
+        # 交互轮分不到预算（只剩预留给最终轮的 128），最终轮仍能拿到 128
+        self.assertEqual(budget.allocate(prompt_tokens=10).max_new_tokens, 0)
+        self.assertEqual(
+            budget.allocate(prompt_tokens=10, is_final=True).max_new_tokens,
+            self.limits.final_answer_tokens,
+        )
+
+
 class PromptSignatureTest(unittest.TestCase):
     """课程附件 §3：提示里的工具签名必须与真实函数一致（PR #3 审查发现项）。"""
 
