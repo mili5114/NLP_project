@@ -96,3 +96,17 @@ Thumbs.db
 !/runs/eval_baselines/EVAL/B/**/episode.json
 !/runs/eval_baselines/EVAL/B/**/manifest.json
 !/runs/eval_baselines/EVAL/B/**/turns.jsonl
+
+# 2026-11-24: DEV fix-check sample（runner 修复验证：签名 + 预留最终轮，2 任务 x A/B）
+!/runs/dev_fix_check/
+!/runs/dev_fix_check/DEV/
+!/runs/dev_fix_check/DEV/A/
+!/runs/dev_fix_check/DEV/A/*/
+!/runs/dev_fix_check/DEV/A/**/episode.json
+!/runs/dev_fix_check/DEV/A/**/manifest.json
+!/runs/dev_fix_check/DEV/A/**/turns.jsonl
+!/runs/dev_fix_check/DEV/B/
+!/runs/dev_fix_check/DEV/B/*/
+!/runs/dev_fix_check/DEV/B/**/episode.json
+!/runs/dev_fix_check/DEV/B/**/manifest.json
+!/runs/dev_fix_check/DEV/B/**/turns.jsonl
