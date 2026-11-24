@@ -2,6 +2,7 @@
 
 > 适用版本：`fc67310` 及以后写入的记录。更早的数据（`7af057d` 及以前）没有显式时间戳字段，
 > 只能用第 3 节的派生口径复算，见 §7。
+> 字段名适用版本：`8be4109` 起对齐 C 的 reader（§4.3）；`7af057d` 及以前的批次用旧字段名，读法见 §4.3 的换算表。
 
 ## 1. 目录与三件套
 
@@ -51,25 +52,29 @@ runs/<batch>/<SPLIT>/<COND>/<task_id>__<run_id>/
 | `wall_seconds` | writer 生命周期墙钟（≈ 任务总时长，含落盘） |
 | `trajectory_path` | 对应 `turns.jsonl` 路径 |
 | `config_sha256` | 课程 `runtime_settings.json` 的 sha256（见 `docs/env_and_config.md` §3，注意这不是完整配置 hash） |
+| `code_commit` / `model_revision` | 该记录实际使用的团队 commit 与模型 revision（`8be4109` 起；旧批次从 `manifest.json` 读） |
 | 时间字段 | 见 §2 |
 | `error` | 仅 `status=error` 时出现：`<ExcType>: <message>` |
 
 ## 4. `turns.jsonl`
 
-每行一次模型调用。`turn_index` 从 0 递增。
+每行一次模型调用。字段名与 C 的 `turns_reader.REQUIRED_TURN_FIELDS` 对齐（`8be4109` 起）。`turn_index` 从 1 递增；更早批次从 0 起，差异见 §4.4。
 
 | 字段 | 说明 |
 |---|---|
+| `turn_index` | 1 起的调用序号 |
+| `is_final_answer_turn` | 本行是预算耗尽后追加的**纯回答轮**（受 128 token 限制、不执行工具） |
+| `produced_final_answer` | 本行的解析结果就是最终 Answer（可能是普通交互轮，仍受 384 限制） |
 | `messages` | 本次调用**实际送入**的完整 messages（system + 历史 assistant/user） |
 | `generation_settings` | `max_new_tokens`、`do_sample=false`、`enable_thinking=false`、`stop_text`、`is_final_turn` |
-| `raw_text` / `parsed` | 模型原始文本 / 解析结果（`answer` / `action` / `invalid`） |
+| `raw_model_text` / `parsed` | 模型原始文本 / 解析结果（`answer` / `action` / `invalid`）；`parsed_action` 与 `parsed` 同值 |
 | `action` | 被执行的代码块；`null` 表示本行没有执行代码（Answer、最终轮、被截止截断、无效输出） |
-| `tool_events` | 工具事件列表，字段见 §4.1；无调用为 `[]` |
+| `events` | 工具事件列表，字段见 §4.1；无调用为 `[]` |
 | `python_output` | 解释器 stdout（未截断原文；模型看到的可能已被反馈层截断） |
-| `feedback_text` | **实际送回模型**的反馈（A：Python 输出原文；B：trace 优先 + Python 输出） |
+| `feedback` | **实际送回模型**的反馈（A：Python 输出原文；B：trace 优先 + Python 输出） |
 | `feedback_metadata` | `selected_event_indices` / `omitted_event_indices` / `truncated` / `feedback_chars` / `rule_trigger_count`；特殊轮次另有 `note` |
 | `input_tokens` / `output_tokens` | 本次调用的真实计数 |
-| `elapsed_seconds` | 生成 + 代码块执行 |
+| `elapsed_seconds` | 生成 + 代码块执行（`wall_seconds` 同值，供 C 的 reader 取用） |
 | `generation_seconds` | **只有**模型生成耗时 |
 | `finish_reason` | `stop`（遇到停止串/EOS）/ `length`（达到本次 token 上限）/ `deadline`（被 180s 截断） |
 | `cut_by_deadline` | `finish_reason == "deadline"` |
@@ -80,15 +85,36 @@ runs/<batch>/<SPLIT>/<COND>/<task_id>__<run_id>/
 
 `index`（块内从 1 开始）、`tool`、`args_repr`、`kwargs_repr`、`execution_status`（`ok`/`error`/`blocked`）、`result_repr`、`error_repr`、`elapsed_seconds`。不适用项写 `null`。`blocked` 表示**没有执行**，不是正常返回。
 
-### 4.2 最终回答轮的识别（C 侧映射用）
+### 4.2 最终回答轮的识别
 
 | 问题 | 判据 |
 |---|---|
-| 这次调用是不是"预算耗尽后追加的纯回答轮"？ | `generation_settings.is_final_turn == true`（`max_new_tokens=128`、不执行工具） |
-| 这次调用是不是"普通交互轮里直接给出 Answer"？ | `is_final_turn == false` 且 `parsed.type == "answer"`（上限仍是 384） |
+| 这次调用是不是"预算耗尽后追加的纯回答轮"？ | `is_final_answer_turn == true`（冗余判据：`generation_settings.is_final_turn`、`max_new_tokens=128`、不执行工具） |
+| 这次调用是不是"普通交互轮里直接给出 Answer"？ | `produced_final_answer == true` 且 `is_final_answer_turn == false`（上限仍是 384） |
 | 这一轮为什么没有执行代码？ | `feedback_metadata.note`：`final_answer_only_turn` / `generation_cut_by_task_timeout` / `invalid_generation` |
 
-注意 `final_turn_used` 只在 `budget` 快照里出现，且表示"最终轮已被用过"，与 `is_final_turn`（本行就是最终轮）不要混用。
+两个标志必须分开记、分开验：交互轮直接答对时只有 `produced_final_answer`，不能据此套 128 的限制；最终轮只用于"预算已耗尽仍要一句话"的场景。注意 `final_turn_used` 只在 `budget` 快照里出现，且表示"最终轮已被用过"，与 `is_final_answer_turn`（本行就是最终轮）不要混用。
+
+### 4.3 与 C 的 schema 的对应关系
+
+`8be4109` 起运行时直接写 C 的字段名（`turns_reader.REQUIRED_TURN_FIELDS` 全覆盖），`episode.json` 自带 `code_commit` 与 `model_revision`，C 侧不需要任何映射。
+
+`8be4109` 之前的批次（`runs/dev_fix_check*`、`runs/dev_full_v3` 等）仍用旧字段名，读老批次时按下表换算：
+
+| C 期望的字段 | 旧批次实际字段 | 换算规则 |
+|---|---|---|
+| `is_final_answer_turn` | `generation_settings.is_final_turn` | 直接取 |
+| `produced_final_answer` | `parsed.type == "answer"` | 布尔化 |
+| `raw_model_text` | `raw_text` | 直接取 |
+| `events` | `tool_events` | 直接取 |
+| `feedback` | `feedback_text` | 直接取 |
+| `turn_index` | `turn_index` | **加 1**（旧批次 0 起） |
+| episode 的 `code_commit` | `manifest.team_commit` | 直接取 |
+| episode 的 `model_revision` | `manifest.model.revision` | 直接取 |
+
+正式基线用 `runs/dev_full_v4`（`8be4109`，原生字段名），旧批次只作诊断材料，不必为读它们改代码。
+
+
 
 ## 5. `manifest.json`
 

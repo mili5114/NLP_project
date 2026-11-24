@@ -51,3 +51,15 @@ v3 的 message_decoder 真实样例作业在排队阶段被撤，改由完整 DE
 ## 6. 下一步（不阻塞）
 
 完整 DEV 32 槽位（`runs/dev_full_v3`，`COND=A/B`，作业 `devfull3-A/B`）跑完后，本表两处"未覆盖"会由真实数据补上：`message_decoder/multi_step_decoding_challenge`（签名）与任一走到 180s 的任务（时间截止，若仍未出现则继续标"未覆盖"，不重跑到触发）。
+
+## 7. 补充：完整 DEV 批次的真实签名证据（22:20 实测）
+
+`runs/dev_full_v3/DEV/A` 的三个 message_decoder 任务已经给出真实调用证据（不再只是提示层断言）：
+
+- 系统提示：`Signature: reverse_string(s: str) -> str`、`Signature: string_length(s: str) -> int`；
+- 真实调用：`reverse_string('WebTechnology')` → `ok`、`reverse_string('rowtnaSyM')` → `ok`；
+- 零 TypeError：三集共 34 次工具调用、错误 0（首轮同任务因签名错误曾必然抛 `unexpected keyword argument`）。
+- `find_flights` 同批复核：`cheapest_new_york_trip` 4 次调用全部 `ok`，答案 `615`（与 v1 样例一致）。
+
+180s 到点截断仍无真实样例：本批 A 最长 121.4s，B 见 `docs/dev_baseline_v3.md`；按约定不重跑到触发。
+

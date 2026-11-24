@@ -7,8 +7,12 @@
 | 用途 | commit | 说明 |
 |---|---|---|
 | 课程指定上游 | `d607f56c9cfe9e8632ebaf65dcaf2b4b7fe1c6f8` | 记录在每个 `manifest.json` 的 `upstream_commit` |
-| 基线运行代码（v2 验证 + 完整 DEV 批次） | `7af057d46c091181a363fac7ff055efc5fc297d5` | 记录在每个 `manifest.json` 的 `team_commit`；**这是"这批数据由哪份代码产生"的唯一依据** |
-| 当前 HEAD | `fc67310` | 只改记录字段（时间戳）与测试，不改预算、提示词、解码参数；见 §4 |
+| v2 验证样例 | `7af057d46c091181a363fac7ff055efc5fc297d5` | `runs/dev_fix_check_v2`；也是 v3 单槽补跑用的独立工作树 |
+| v3 完整 DEV 批（**已弃用**） | `c7145fa5b345a66a8dfcf771e8bf22befcb394d8`（31 条）+ `7af057d`（1 条补跑） | 服务器 HEAD 曾被数据提交拉到 `c7145fa`，批次因此混合 commit → 不当基线 |
+| **v4 完整 DEV 基线** | `8be4109831b4e431525664e341357cd422739b96` | `runs/dev_full_v4` 32/32；运行时写 C 的字段名 + `episode.code_commit`/`model_revision` |
+| 当前 HEAD | `8be4109831b4e431525664e341357cd422739b96` | 与 v4 批次的 `team_commit` 一致；见下"未提交状态" |
+
+"这批数据由哪份代码产生"看每个 `manifest.json` 的 `team_commit`，**不要看当前 HEAD**（v3 的坑就是看了 HEAD）。
 
 提交前的未提交状态：服务器工作区 `git status --porcelain` 为空（无 modified / untracked），即提交出去的代码与实际跑的代码一致。判定方法：`cd ~/codeact-work && git status --short && git rev-parse HEAD`。
 
@@ -42,20 +46,27 @@
 
 | 批次 | `config_fingerprint` | `team_commit` |
 |---|---|---|
+| `runs/dev_full_v4`（**正式基线**，32 槽位） | `32e36f9535f0d7a217677fc3d84699e9269a456654dc8dd48b6251da7f6228cb`（32/32 一致） | `8be4109` |
 | `runs/dev_fix_check_v2`（v2 验证样例，A/B） | `e4fe086ff67af7fa673189a78009ae6caca18c54db165164d7418757584d0bb9` | `7af057d` |
 | `runs/dev_baselines`（首轮 16×2 + pilot，仅诊断） | `27bc27436d248f4e19c8e8d4a040ec3cb1744b586504c31f12092a9c52484495` | `8c1f481` |
-| `runs/dev_full_v3`（完整 DEV，32 槽位） | 数据落盘后用同一命令算，写进 `runs/index.md` | `7af057d` |
+| `runs/dev_full_v3`（完整 DEV，已弃用） | **2 个值**：`7ee8ff92…46de6c3`（31 条，`c7145fa`）+ `e4fe086f…84d0bb9`（1 条补跑，`7af057d`） | 混合 |
 
 `config_fingerprint` 里**不含 GPU 型号**：GPU 不改课程协议，只影响速度与数值细节，所以单独记在 `docs/gpu_ledger.md`（作业号、卡数、起止时间、GPU 时长口径）。
 
-## 4. `fc67310` 改了什么（为什么基线数据不是这个 commit）
+## 4. `fc67310` / `8be4109` 改了什么（为什么基线数据不是这两个 commit 之外的东西）
 
-只改记录与测试：
+`fc67310`（只改记录与测试）：
 
 - `turns.jsonl` 每轮增加 `generation_seconds` / `finish_reason` / `cut_by_deadline` / `generation_stopped_at` / `generation_stopped_task_seconds`；
 - `episode.json` 增加 `task_started_at` / `task_deadline_at` / `generation_stopped_at` / `episode_written_at` / `post_generation_seconds` / `deadline_overrun_seconds` / `deadline_exceeded`；
-- 新增 2 个 CPU 回归（到点截断语义 + 时间字段），全量测试 97 条通过。
+- 新增 2 个 CPU 回归（到点截断语义 + 时间字段）。
 
-不涉及：`limits` 任何数值、system prompt / contract / 最终轮请求、解码参数、工具观察器、反馈层。因此 `7af057d` 产出的数据在协议上与 `fc67310` 等价，差别只是旧数据要用派生口径读时间（见 `docs/log_fields.md` §8）。
+`8be4109`（v4 基线用的就是它）：
+
+- `turns.jsonl` 改用 C 的 reader 字段名（`raw_model_text` / `events` / `feedback`），加 `produced_final_answer` / `is_final_answer_turn` 两个分开的标志，`turn_index` 改 1 起；
+- `episode.json` 自带 `code_commit` / `model_revision`；
+- 用真实 turns 过 `read_turns` 的回归测试。
+
+两者都不涉及：`limits` 任何数值、system prompt / contract / 最终轮请求、解码参数、工具观察器、反馈层。所以 `7af057d` / `c7145fa` / `8be4109` 产出的数据在**协议与行为**上等价——v3 与 v4 逐槽位答案、调用数、输出 token 完全相同即为证据；差别只在记录字段名与 `turn_index` 起点（见 `docs/log_fields.md` §4.3）。
 
 旧数据（`7af057d` 及以前）与 `8c1f481`（首轮基线）的区别见 `docs/failure_taxonomy.md`：首轮那批 **提示词签名是错的**，只能作诊断材料，不能当基线。**首轮 DEV/EVAL 记录不进入新基线。**

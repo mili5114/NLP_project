@@ -74,3 +74,22 @@ python scripts/score.py --episodes runs/dev_full_v4/index.jsonl \
 - 只有 DEV，没有 EVAL；EVAL 必须等 B 的冻结包，本批不构成任何方法优劣结论。
 - 硬件是 A40（debug 分区），与首轮 86 条基线同型号；贪心解码保证可复现，v3/v4 答案逐条一致即为证据。
 - 单任务最多 32 次工具调用，A 条件有 16 次被拦（`multi_city_business_trip` 一个任务占满预算），说明该题对 A 条件的反馈信息量偏紧，值得 B 在候选设计时留意——但这只是观察，不是结论。
+
+## 7. 一处协议偏差：工具预算耗尽后没有立即进最终轮（需要 B/C 在冻结前定）
+
+课程附件原文：*"Do not execute calls beyond the limit; retain earlier effects. **Move to the final-answer turn when the tool budget is exhausted.**"*
+
+本批的实际行为：第 32 次工具调用执行完之后**不切最终轮**，继续留在交互轮，把模型后续的调用一律拦截，直到轮次或 token 耗尽才进最终轮。
+
+证据（A `travel_itinerary_planning/multi_city_business_trip`，`runs/dev_full_v4/DEV/A/…`）：
+
+| 观察 | 值 |
+|---|---|
+| 交互轮 | 12 轮 × 每轮 4 次尝试，第 13 行是最终回答轮（0 事件） |
+| 前 8 轮 | 32 次执行（到顶） |
+| 后 4 轮 | 16 次全部 `blocked`（`error_repr = blocked: per-task limit 32 exceeded`） |
+| 终止 | `final_answer_after_turns_exhausted`（不是"工具耗尽即进最终轮"） |
+
+影响面：32 个槽位里只有这 1 个触发工具上限（B 同题 8 执行 / 1 拦截，未到顶），其余 31 个不受影响；该槽位本就判错（答案 `0`），但 A 的 `output_tokens` 因此偏高 4 轮。
+
+为什么不连夜改：改运行时代码就要按新行为整批重跑 32 槽位（约 0.35 GPU·h、20 分钟），而 B 的方法冻结在即。**修法很小**：块执行后若 `tool_attempts_executed == limits.tool_attempts_per_task`，主循环直接 `break` 进最终轮（`src/runtime/runner.py` 加一个 break 条件 + 一条 CPU 回归）。要不要在 EVAL 前修，请 B/C 决定；本批记录已如实反映当前行为，不隐藏。

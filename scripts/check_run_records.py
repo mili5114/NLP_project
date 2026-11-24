@@ -73,8 +73,10 @@ def check_episode(directory: Path, *, allow_error: bool) -> list[str]:
             problems.append(
                 f"model_calls={episode.get('model_calls')} 但 turns 有 {len(turns)} 行"
             )
-        if [t.get("turn_index") for t in turns] != list(range(len(turns))):
-            problems.append("turn_index 不是从 0 连续编号")
+        indices = [t.get("turn_index") for t in turns]
+        # 8be4109 起 1 起编号；更早批次 0 起。两种只认其一，且必须连续无重复。
+        if indices != list(range(len(turns))) and indices != list(range(1, len(turns) + 1)):
+            problems.append("turn_index 不是从 0 或 1 起连续编号")
         if episode.get("input_tokens") != sum(t.get("input_tokens", 0) for t in turns):
             problems.append("input_tokens 与逐行之和不一致")
         if episode.get("output_tokens") != sum(t.get("output_tokens", 0) for t in turns):

@@ -3,7 +3,10 @@
 AIAA 4051 Project 14 — Execution Feedback and Interaction Efficiency in CodeAct Agents.
 
 **三人分工与认领，先看 [TEAM_QUICKSTART.md](TEAM_QUICKSTART.md)。**
-**环境与集群用法，看 [docs/setup.md](docs/setup.md)。**
+**要跑实验：看 [docs/runbook.md](docs/runbook.md)（环境准备 → 单任务验证 → 完整 DEV A/B 命令）。**
+**要核验记录：看 [docs/log_fields.md](docs/log_fields.md)（字段、180s/185s 口径、最终轮标记）。**
+**要接手交接材料：看 [docs/handoff_a.md](docs/handoff_a.md)（六件材料 + 协议验证表的入口）。**
+**要直接用基线数据：看 [docs/A_dev_baseline_handoff.md](docs/A_dev_baseline_handoff.md)（`runs/dev_full_v4/`，32 槽位，含审计现状与一处已知偏差）。**
 
 ## 分工状态
 
