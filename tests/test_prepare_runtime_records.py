@@ -21,7 +21,8 @@ class PrepareRecordsTests(unittest.TestCase):
         self.out = self.root / "derived"
         self.put("configs/course/split_manifest.json", {"DEV": ["group/task"], "EVAL": []})
         self.put("configs/course/runtime_settings.json",
-                 {"initial_contract": "contract", "limits": {"total_generated_tokens": 3072}})
+                 {"initial_contract": "contract", "limits": {"total_generated_tokens": 3072,
+                                                             "task_seconds": 180}})
         self.ep = dict(schema_version="1", synthetic=False, run_id="r", task_id="group/task",
                        split="DEV", condition="A", config_sha256="h", input_tokens=10,
                        output_tokens=2, model_calls=1, final_answer="42", termination_reason="answer",
@@ -70,3 +71,23 @@ class PrepareRecordsTests(unittest.TestCase):
     def test_source_output_overlap_rejected(self):
         with self.assertRaises(InputError):
             module.prepare(self.root, self.source, self.source / "derived")
+
+    def test_explicit_subset_never_implies_full_dev(self):
+        self.put("configs/course/split_manifest.json", {"DEV": ["group/task", "other/task"], "EVAL": []})
+        report = module.prepare(self.root, self.source, self.out, selected_tasks=["group/task"])
+        self.assertEqual(report["expected"], 2)
+        self.assertEqual(report["official_DEV_expected"], 4)
+        self.assertEqual(report["cohort"], "explicit_DEV_healthcheck_subset")
+        self.assertFalse(report["full_DEV_covered"])
+
+    def test_unknown_or_duplicate_subset_rejected(self):
+        for tasks in (["unknown/task"], ["group/task", "group/task"], []):
+            with self.subTest(tasks=tasks), self.assertRaises(InputError):
+                module.prepare(self.root, self.source, self.out, selected_tasks=tasks)
+
+    def test_wall_overrun_kept_and_flagged(self):
+        self.ep["wall_seconds"] = 237
+        self.put(self.base + "episode.json", self.ep)
+        report = module.prepare(self.root, self.source, self.out)
+        self.assertIn("task_wall_overrun_requires_review", report["finding_counts"])
+        self.assertEqual(report["recorded"], 1)

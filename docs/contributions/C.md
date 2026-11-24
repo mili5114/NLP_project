@@ -89,3 +89,7 @@ python scripts/plot_results.py --summary results/synthetic/summary.json \
 ## 7. 2026-11-24：blocked 审计修正与 A 修复复查
 
 已同步 A 的 beacbfc，确认提示签名与预留最终轮代码修复，但尚无对应新日志。新增 tool_audit.py，按顺序验证实际执行与 blocked，修正把超额 blocked 本身判为违规的误报，接入 audit.py/preparation 并核验 episode 计数。C 的76项测试通过。旧32条 DEV 的282次尝试=276执行+6 blocked，计数一致；只作旧数据诊断，不是正式认证。详见 docs/C_FOLLOWUP_20261124.md。
+
+## 8. 2026-11-24：4条新样例验收
+
+同步816fb14；新增显式DEV子集核验与任务wall超限提示，79项C测试通过。4条新样例结构一致，旅行A/B验证三参数find_flights。两条预算任务转为约237/255秒task_timeout，未到最终轮验证点；发现manifest团队SHA暂不可从GitHub解析。证据和交接见 docs/C_FIX_SAMPLE_REVIEW_20261124.md。未运行GPU、未修改A模块、未评分正确性。

@@ -20,13 +20,17 @@ from src.evaluation.runtime_adapter import adapt_episode, adapt_turn, prompt_sig
 from src.evaluation.tool_audit import audit_tool_attempts
 
 
-def prepare(root: Path, source: Path, out: Path) -> dict:
+def prepare(root: Path, source: Path, out: Path, *, selected_tasks: list[str] | None = None) -> dict:
     root, source, out = root.resolve(), source.resolve(), out.resolve()
     if source == out or source in out.parents or out in source.parents:
         raise InputError("source and output must be separate directory trees")
     if out.exists():
         raise InputError("output exists: choose a fresh directory to preserve prior results")
-    tasks = read_json(root / "configs/course/split_manifest.json")["DEV"]
+    official_tasks = read_json(root / "configs/course/split_manifest.json")["DEV"]
+    tasks = official_tasks if selected_tasks is None else selected_tasks
+    if (not tasks or not all(isinstance(t, str) for t in tasks)
+            or len(tasks) != len(set(tasks)) or not set(tasks) <= set(official_tasks)):
+        raise InputError("selected tasks must be a nonempty unique subset of official DEV")
     settings = read_json(root / "configs/course/runtime_settings.json")
     rows, excluded, findings, seen = [], [], [], set()
     tool_totals = Counter()
@@ -88,12 +92,20 @@ def prepare(root: Path, source: Path, out: Path) -> dict:
         hashes = {name: hashlib.sha256((path.parent / name).read_bytes()).hexdigest()
                   for name in ("episode.json", "manifest.json", "turns.jsonl")}
         normalized["source_sha256"] = hashes
+        wall = ep.get("wall_seconds")
+        if isinstance(wall, (int, float)) and wall > settings["limits"]["task_seconds"]:
+            findings.append({"task_id": ep["task_id"], "condition": ep["condition"],
+                             "code": "task_wall_overrun_requires_review", "owner": "A",
+                             "detail": f"wall_seconds={wall}; inspect in-flight generation deadline"})
         write_jsonl(derived / "turns.jsonl", turns)
         write_json(derived / "episode.json", normalized)
         rows.append({"episode_path": str((derived / "episode.json").relative_to(out))})
     expected = {(t, c) for t in tasks for c in ("A", "B")}
     report = {
         "scope": "DEV structure and adapter checks only; no reference answers or scoring",
+        "cohort": "full_DEV" if selected_tasks is None else "explicit_DEV_healthcheck_subset",
+        "official_DEV_expected": len(official_tasks) * 2,
+        "full_DEV_covered": seen == {(t, c) for t in official_tasks for c in ("A", "B")},
         "formal_protocol_certified": False,
         "expected": len(expected), "recorded": len(seen),
         "missing": [list(k) for k in sorted(expected - seen)], "excluded": excluded,
@@ -113,9 +125,13 @@ if __name__ == "__main__":
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument("--source", default=str(ROOT / "runs/dev_baselines/DEV"))
     p.add_argument("--out-dir", required=True)
+    p.add_argument("--tasks", help="JSON array of official DEV task IDs for an explicit healthcheck subset")
     args = p.parse_args()
     try:
-        report = prepare(ROOT, Path(args.source), Path(args.out_dir))
+        tasks = read_json(args.tasks) if args.tasks else None
+        if args.tasks and not isinstance(tasks, list):
+            raise InputError("--tasks must contain a JSON array")
+        report = prepare(ROOT, Path(args.source), Path(args.out_dir), selected_tasks=tasks)
         print({k: report[k] for k in ("expected", "recorded", "missing", "finding_counts")})
         sys.exit(1 if report["missing"] or report["findings"] else 0)
     except (EvaluationError, OSError) as exc:

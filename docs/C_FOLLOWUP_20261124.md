@@ -2,6 +2,8 @@
 
 日期：2026-11-24。检查远程 main 提交 `beacbfc`，与首轮日志提交 `95ce5b0` 区分。
 
+> 后续更新：A 已在816fb14上传4条新样例。以下“尚无新日志”描述的是此前检查时点。新样例验收、时间边界及源码身份问题见 [修复样例验收](C_FIX_SAMPLE_REVIEW_20261124.md)。
+
 ## A 的修改已存在
 
 - `src/runtime/tasks.py` 新增 `_apply_course_signatures`，在加载任务时改写 find_flights/reverse_string/string_length 的提示签名，并与真实函数参数核对，不改 third_party。
