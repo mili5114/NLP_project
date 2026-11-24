@@ -110,3 +110,8 @@ Thumbs.db
 !/runs/dev_fix_check/DEV/B/**/episode.json
 !/runs/dev_fix_check/DEV/B/**/manifest.json
 !/runs/dev_fix_check/DEV/B/**/turns.jsonl
+
+# 2026-11-24: 离线参考答案原文不进公开仓库（公开仓库，答案只在本机/集群）；
+# 只提交 hash 清单，C 用同一脚本本地生成后按 content_sha256 交叉校验。
+/references/offline_reference_v*.json
+!/references/offline_reference_v*.manifest.json
