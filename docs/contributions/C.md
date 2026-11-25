@@ -98,3 +98,8 @@ python scripts/plot_results.py --summary results/synthetic/summary.json \
 ## 2026-11-25：DEV v4 独立验收
 
 详见 [C DEV v4 验收](../C_DEV_V4_REVIEW_20261125.md)。32/32 结构及评分复现通过，但 1 槽位工具预算耗尽后继续交互；新增转换审计与 6 项回归，当前 132 tests 通过。v4 结论为 INCOMPLETE，仅作诊断，等待 A 修复运行时、B 对齐协议后冻结。参考原文留本机，未跑新 GPU/EVAL。
+
+
+## 2026-11-25：正式实验与展示准备
+
+新增 C_EVAL_EXECUTION 执行/验收手册、结果章节骨架、C_POSTER_DEMO_PLAN 内容底稿、C_CODE_WALKTHROUGH 代码讲解材料。核对已有 CLI 与课程设置，保留 C/D 尚未接入、配置 hash 口径和 TA 展示形式待确认的边界。不启动 GPU/EVAL，不用 DEV 诊断结果填最终结果。
