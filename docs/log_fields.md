@@ -139,7 +139,8 @@ GPU 型号不进 manifest（它不改变协议），记录在 `docs/gpu_ledger.m
 | `answer` | 交互轮里出现首个可解析 Answer，立即结束 |
 | `final_answer_after_turns_exhausted` | 12 轮用尽 → 追加最终轮 → 拿到 Answer |
 | `final_answer_after_tokens_exhausted` | 生成预算只剩预留 128 → 最终轮 → 拿到 Answer |
-| `no_answer_after_turns_exhausted` / `no_answer_after_tokens_exhausted` | 最终轮没有产出可解析 Answer（合法出口，判 0，不算故障） |
+| `final_answer_after_tool_budget_exhausted` | 工具尝试预算（含 blocked）用尽 → 立即进最终轮 → 拿到 Answer（2026-11-25 修复起，附件 §2 转换要求） |
+| `no_answer_after_turns_exhausted` / `no_answer_after_tokens_exhausted` / `no_answer_after_tool_budget_exhausted` | 最终轮没有产出可解析 Answer（合法出口，判 0，不算故障） |
 | `task_timeout` | 180s 到点（含生成被截止截断、代码块被剩余时间钳制） |
 | `action_timeout` | 单个代码块超过 15s（未触及 180s） |
 | `platform_error` | 平台异常，`status=error`，附 `error` 字段 |

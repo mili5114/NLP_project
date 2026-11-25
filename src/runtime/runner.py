@@ -2,7 +2,8 @@
 
 与上游 `main.py` 的关键差异（都是课程要求）：
 - 首个可解析的 `Answer:` 立即结束，不再拿标准答案判断对错、也不回 "Your answer is incorrect"。
-- 12 轮交互用尽后，追加**一次**只能回答、不能执行工具的最终轮。
+- 12 轮交互用尽后，追加**一次**只能回答、不能执行工具的最终轮；
+  工具尝试预算（含 blocked）用尽时同样立即进最终轮，不再留在交互轮。
 - 工具调用由 observer 计数并在超限时拦截，不靠数代码文本。
 - 标准答案从不进入 messages、不进入 feedback、不写入在线记录。
 """
@@ -155,6 +156,9 @@ def run_episode(
     termination: str | None = None
     final_answer: str | None = None
     turn_index = 0
+    # 课程附件 §2：工具预算耗尽后立即进入最终回答轮。预算按“调用尝试”计
+    # （含 blocked，与 observer 的 task_attempts 口径一致），不是只数执行次数。
+    tool_budget_exhausted = False
 
     def _record_turn(
         *,
@@ -227,6 +231,12 @@ def run_episode(
     while True:
         if budget.task_expired:
             termination = "task_timeout"
+            break
+        if observer.task_attempts >= limits.tool_attempts_per_task:
+            # 工具尝试预算（含 blocked）已用尽：当前动作块已完成、反馈已落盘，
+            # 从这里起不再发起任何交互轮调用，下一次模型调用就是预留最终轮。
+            # 硬时间截止优先级更高（上面已检查）；这里即使轮次还有剩也不继续。
+            tool_budget_exhausted = True
             break
         if not budget.can_start_turn():
             break
@@ -337,13 +347,17 @@ def run_episode(
             is_final=False,
         )
 
-    # ---------- 最终轮（仅当交互阶段结束时还没有 termination：轮次/token/上下文耗尽） ----------
+    # ---------- 最终轮（仅当交互阶段结束时还没有 termination：工具预算/轮次/token/上下文耗尽） ----------
     if termination is None:
         if budget.task_expired:
             # 时间上限在最后一轮执行后到期：时间耗尽不允许再请求模型。
             termination = "task_timeout"
         else:
-            exhausted_by = "turns" if budget.turns_left == 0 else "tokens"
+            if tool_budget_exhausted:
+                # 附件 §2 的转换触发器：工具尝试预算耗尽（可能轮次还剩）。
+                exhausted_by = "tool_budget"
+            else:
+                exhausted_by = "turns" if budget.turns_left == 0 else "tokens"
             messages.append({"role": "user", "content": cfg.final_answer_request})
             snapshot = [dict(m) for m in messages]
             prompt_tokens = _count_tokens(backend, messages)
