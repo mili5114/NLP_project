@@ -103,3 +103,7 @@ python scripts/plot_results.py --summary results/synthetic/summary.json \
 ## 2026-11-25：正式实验与展示准备
 
 新增 C_EVAL_EXECUTION 执行/验收手册、结果章节骨架、C_POSTER_DEMO_PLAN 内容底稿、C_CODE_WALKTHROUGH 代码讲解材料。核对已有 CLI 与课程设置，保留 C/D 尚未接入、配置 hash 口径和 TA 展示形式待确认的边界。不启动 GPU/EVAL，不用 DEV 诊断结果填最终结果。
+
+## 2026-11-25：A 工具预算修复独立验收
+
+复核 de5b037，新增 tests/test_tool_budget_handoff.py 两项 C 集成测试（32 attempts = 4 executed + 28 blocked；final-only Action 不执行），并用 C adapter/auditor交叉检查。全套 138 项 CPU 测试通过，撰写 C_TOOL_BUDGET_FIX_REVIEW_20261125.md，放行新版 DEV，明确旧数据结论和 GPU 证据边界。
