@@ -16,6 +16,14 @@ def audit_tool_attempts(turns: list[dict], limits: dict) -> dict:
         issues.append({"code": code, "detail": f"turn {turn['turn_index']}: {detail}"})
 
     for turn in turns:
+        # Finish the current code block (retaining earlier effects), but the
+        # next model call must be final-only once the task attempt budget is used.
+        # A blocked invocation still consumed an attempt; it is not an execution.
+        if (task_cap is not None and attempted >= task_cap
+                and not turn.get("is_final_answer_turn", False)):
+            add("interaction_after_tool_budget_exhausted", turn,
+                f"interaction resumed after {attempted} tool attempts "
+                f"(task limit {task_cap}); next call must be final-only")
         for position, event in enumerate(turn["events"], 1):
             # Count every listed invocation attempt, including blocked ones.
             attempted += 1

@@ -228,12 +228,12 @@ class FinalAnswerSemanticsTests(unittest.TestCase):
 
 
 class ToolCounterIntegrationTests(unittest.TestCase):
-    def run_case(self, statuses, executed, blocked):
+    def run_case(self, statuses, executed, blocked, final_only=True):
         with tempfile.TemporaryDirectory() as tmp:
             events = [{"index": i, "execution_status": s, "result_repr": None}
                       for i, s in enumerate(statuses, 1)]
             turns = [make_turn(1, output_tokens=10, events=events),
-                     make_turn(2, output_tokens=10, produced=True)]
+                     make_turn(2, output_tokens=10, produced=True, final_only=final_only)]
             ep = write_case(tmp, turns, extra_ep={"tool_attempts_executed": executed,
                                                 "tool_attempts_blocked": blocked})
             settings = read_json(REPO_ROOT / "configs/course/runtime_settings.json")
@@ -245,6 +245,11 @@ class ToolCounterIntegrationTests(unittest.TestCase):
         report = self.run_case(["ok"] * 4 + ["blocked"] * 35, 4, 35)
         self.assertEqual(codes(report), [])
         self.assertEqual(report["status"], "PASS")
+
+    def test_interaction_after_task_budget_is_rejected(self):
+        report = self.run_case(["ok"] * 4 + ["blocked"] * 35, 4, 35, final_only=False)
+        self.assertIn("interaction_after_tool_budget_exhausted", codes(report))
+        self.assertFalse(report["complete"])
 
     def test_counters_must_match_events(self):
         report = self.run_case(["ok", "error"], 1, 0)

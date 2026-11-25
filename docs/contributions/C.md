@@ -93,3 +93,8 @@ python scripts/plot_results.py --summary results/synthetic/summary.json \
 ## 8. 2026-11-24：4条新样例验收
 
 同步816fb14；新增显式DEV子集核验与任务wall超限提示，79项C测试通过。4条新样例结构一致，旅行A/B验证三参数find_flights。两条预算任务转为约237/255秒task_timeout，未到最终轮验证点；发现manifest团队SHA暂不可从GitHub解析。证据和交接见 docs/C_FIX_SAMPLE_REVIEW_20261124.md。未运行GPU、未修改A模块、未评分正确性。
+
+
+## 2026-11-25：DEV v4 独立验收
+
+详见 [C DEV v4 验收](../C_DEV_V4_REVIEW_20261125.md)。32/32 结构及评分复现通过，但 1 槽位工具预算耗尽后继续交互；新增转换审计与 6 项回归，当前 132 tests 通过。v4 结论为 INCOMPLETE，仅作诊断，等待 A 修复运行时、B 对齐协议后冻结。参考原文留本机，未跑新 GPU/EVAL。

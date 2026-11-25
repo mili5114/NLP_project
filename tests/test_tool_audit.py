@@ -29,7 +29,7 @@ class ToolAuditTests(unittest.TestCase):
 
     def test_task_limit_preserves_action_reset(self):
         turns = [turn(["ok"] * 4, i) for i in range(1, 9)] + [turn(["blocked"], 9)]
-        self.assertEqual(self.codes(turns), [])
+        self.assertEqual(self.codes(turns), ["interaction_after_tool_budget_exhausted"])
         turns[-1] = turn(["error"], 9)
         self.assertIn("unblocked_over_budget_tool", self.codes(turns))
 
@@ -54,3 +54,34 @@ class ToolAuditTests(unittest.TestCase):
         value = turn(["ok"] * 4 + ["blocked"])
         value["events"][-1]["result_repr"] = "unexpected"
         self.assertIn("blocked_tool_has_result", self.codes([value]))
+
+
+class ToolBudgetTransitionTests(unittest.TestCase):
+    limits = {"tool_attempts_per_action": 4, "tool_attempts_per_task": 4}
+
+    def check(self, turns):
+        return [x["code"] for x in audit_tool_attempts(turns, self.limits)["issues"]]
+
+    def test_next_call_must_be_final_even_without_tools(self):
+        self.assertEqual(self.check([turn(["ok"] * 4), turn([], 2)]),
+                         ["interaction_after_tool_budget_exhausted"])
+
+    def test_final_only_after_exhaustion_is_valid(self):
+        final = turn([], 2)
+        final["is_final_answer_turn"] = True
+        self.assertEqual(self.check([turn(["ok"] * 4), final]), [])
+
+    def test_same_block_overflow_remains_valid(self):
+        final = turn([], 2)
+        final["is_final_answer_turn"] = True
+        self.assertEqual(self.check([turn(["ok"] * 4 + ["blocked"] * 2), final]), [])
+
+    def test_blocked_attempts_can_exhaust_task_budget(self):
+        limits = {"tool_attempts_per_action": 2, "tool_attempts_per_task": 4}
+        result = audit_tool_attempts([turn(["ok", "ok", "blocked", "blocked"]),
+                                      turn([], 2)], limits)
+        self.assertEqual([x["code"] for x in result["issues"]],
+                         ["interaction_after_tool_budget_exhausted"])
+
+    def test_hard_stop_without_another_call_is_allowed(self):
+        self.assertEqual(self.check([turn(["ok"] * 4)]), [])
