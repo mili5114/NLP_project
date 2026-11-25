@@ -277,12 +277,116 @@ class EpisodeTest(unittest.TestCase):
         self.assertEqual(first["events"][-1]["execution_status"], "blocked")
 
     def test_task_level_limit_32(self) -> None:
+        """32 次尝试用尽后进最终轮；最终轮的回复若是 Action 也不执行（禁工具）。
+
+        修复前：第 9 个交互轮照常发起，第 33 次调用被拦（blocked=1）。
+        修复后：预算用尽即进最终轮，最终轮回复的 Action 不产生任何工具事件。
+        """
         code = "find_flights('E', 'A', '2023-12-25')\n" * 4
         replies = [action(code)] * 8 + [action("find_flights('E', 'A', '2023-12-25')"), "Answer: ok"]
-        result, _root, _backend = self.run_episode(replies)
+        result, _root, backend = self.run_episode(replies)
+        ep = result["episode"]
+        self.assertEqual(ep["tool_attempts_executed"], 32)
+        self.assertEqual(ep["tool_attempts_blocked"], 0)
+        self.assertEqual(ep["termination_reason"], "no_answer_after_tool_budget_exhausted")
+        self.assertIsNone(ep["final_answer"])
+        self.assertEqual(backend.calls, 9)
+
+    # ---------- 工具预算耗尽 → 立即进最终轮（课程附件 §2 转换要求） ----------
+    def test_tool_budget_exhaustion_moves_next_call_to_final_turn(self) -> None:
+        """32 次尝试用尽后，下一次模型调用必须是 final-only 轮。
+
+        C 验收（docs/C_DEV_V4_REVIEW_20261125.md）判 v4 FAIL 的正是这一点：
+        旧实现在预算用尽后继续留在交互轮拦截调用，直到轮次耗尽。
+        """
+        code = "find_flights('E', 'A', '2023-12-25')\n" * 4
+        # 8 块 × 4 次 = 32 次尝试；第 9 个回复给最终轮；第 10 个回复永远不应被消费
+        replies = [action(code)] * 8 + ["Answer: ok", action("print('forbidden')")]
+        result, _root, backend = self.run_episode(replies)
+        ep = result["episode"]
+        self.assertEqual(ep["termination_reason"], "final_answer_after_tool_budget_exhausted")
+        self.assertEqual(ep["final_answer"], "ok")
+        self.assertEqual(ep["model_calls"], 9, "预算用尽后不得再发起交互轮")
+        self.assertEqual(backend.calls, 9, "第 10 个回复（交互 Action）不应被消费")
+        self.assertEqual(ep["tool_attempts_executed"], 32)
+        self.assertEqual(ep["tool_attempts_blocked"], 0)
+
+        turns = [json.loads(x) for x in Path(result["turns_path"]).read_text(encoding="utf-8").splitlines()]
+        self.assertEqual(len(turns), 9)
+        final_flags = [t["generation_settings"]["is_final_turn"] for t in turns]
+        self.assertEqual(final_flags, [False] * 8 + [True], "只有最后一轮是 final-only")
+        self.assertEqual(turns[-1]["generation_settings"]["max_new_tokens"], 128)
+        self.assertEqual(turns[-1]["events"], [])
+        # 前 8 个交互轮每轮恰好 4 次执行，且没有任何一轮在预算用尽后出现
+        cumulative = 0
+        for t in turns[:-1]:
+            cumulative += len(t["events"])
+        self.assertEqual(cumulative, 32)
+
+    def test_blocked_attempts_consume_task_budget(self) -> None:
+        """blocked 也消耗任务尝试预算（C 审计口径：attempts = executed + blocked）。
+
+        第 8 块第 5 次调用被拦（attempt 33），blocked 计入预算后同样触发
+        “下一次调用进最终轮”。
+        """
+        full = "find_flights('E', 'A', '2023-12-25')\n" * 4
+        overrun = "find_flights('E', 'A', '2023-12-25')\n" * 5 + "print('done')"
+        replies = [action(full)] * 7 + [action(overrun), "Answer: ok"]
+        result, _root, backend = self.run_episode(replies)
         ep = result["episode"]
         self.assertEqual(ep["tool_attempts_executed"], 32)
         self.assertEqual(ep["tool_attempts_blocked"], 1)
+        self.assertEqual(ep["termination_reason"], "final_answer_after_tool_budget_exhausted")
+        self.assertEqual(ep["final_answer"], "ok")
+        self.assertEqual(backend.calls, 9, "blocked 计入预算后不得再发起交互轮")
+
+    def test_deadline_priority_over_tool_budget_transition(self) -> None:
+        """硬时间截止优先：工具预算刚用尽、执行又跨过任务截止时，不再请求最终轮模型。"""
+        import dataclasses as _dc
+
+        # 生成耗时极小（0.001s，Windows 粒度下 7 次也远小于 0.3s）；
+        # 前 7 块只调工具（不 sleep），第 8 块执行里 sleep(1)：在 Linux 上被
+        # 剩余时间钳制（SIGALRM 真中断），在 Windows 上（alarm 退化）自然跑满
+        # 任务 0.3s——两条路径都收敛到 termination=task_timeout，且不再请求最终轮。
+        raw = {**self.cfg.raw, "limits": {**self.cfg.raw["limits"], "task_seconds": 0.3}}
+        cfg = _dc.replace(self.cfg, raw=raw)
+        tool_block = "find_flights('E', 'A', '2023-12-25')\n" * 4
+        slow = DeadlineBackend(
+            delay=0.001,
+            replies=[action(tool_block)] * 7
+            + [action(tool_block + "import time\ntime.sleep(1)")],
+            stop_text=cfg.stop_text,
+        )
+        tmp = tempfile.mkdtemp(prefix="nlp-test-")
+        result = run_episode(
+            task_id=TASK, condition="A", cfg=cfg, backend=slow, runs_root=tmp, split="DEV"
+        )
+        ep = result["episode"]
+        self.assertEqual(ep["termination_reason"], "task_timeout", "硬截止优先于工具预算转换")
+        self.assertEqual(ep["status"], "timeout")
+        self.assertIsNone(ep["final_answer"])
+        self.assertEqual(ep["model_calls"], 8, "时间耗尽后不得请求最终轮")
+        self.assertEqual(ep["tool_attempts_executed"], 32)
+
+    def test_prior_effects_retained_across_final_turn_transition(self) -> None:
+        """预算用尽前的执行效果保留：交互轮照常运行，直到尝试数真正到顶。"""
+        code = "total = 6\nfind_flights('E', 'A', '2023-12-25')\n" * 4  # 每块 4 次
+        replies = (
+            [action(code)] * 7               # 28 次尝试
+            + [action("print(total)")]       # 第 8 轮：28 < 32，交互轮照常
+            + [action(code)]                 # 第 9 轮：到 32 次用尽
+            + ["Answer: ok"]                 # 最终轮
+        )
+        result, _root, backend = self.run_episode(replies)
+        ep = result["episode"]
+        self.assertEqual(ep["tool_attempts_executed"], 32)
+        self.assertEqual(ep["termination_reason"], "final_answer_after_tool_budget_exhausted")
+        self.assertEqual(ep["final_answer"], "ok")
+        self.assertEqual(backend.calls, 10)  # 9 交互 + 1 最终轮
+        turns = [json.loads(x) for x in Path(result["turns_path"]).read_text(encoding="utf-8").splitlines()]
+        self.assertEqual(len(turns), 10)
+        self.assertFalse(turns[7]["generation_settings"]["is_final_turn"])
+        self.assertIn("6", turns[7]["python_output"], "第 1 块的赋值效果在第 8 轮仍可见")
 
     # ---------- 状态隔离 ----------
     def test_variables_reset_between_tasks(self) -> None:
