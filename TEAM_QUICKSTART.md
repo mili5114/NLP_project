@@ -2,7 +2,7 @@
 
 > 项目：Execution Feedback and Interaction Efficiency in CodeAct Agents  
 > 课程：AIAA 4051，2026 Fall  
-> 状态：A 已认领（[#1](https://github.com/mili5114/NLP_project/issues/1)）；B、C 待认领。下面是三个完整工作包，一人认领一个，不按题目拆人。
+> 状态：A 已认领（[#1](https://github.com/mili5114/NLP_project/issues/1)，SibeiLYU）；C 已认领（郑启丹/mili5114，工作痕迹见 [PR #3](https://github.com/mili5114/NLP_project/pull/3)）；**B 待认领（关键路径：方法冻结 + 配置，阻塞 EVAL 与报告合并）**。下面是三个完整工作包，一人认领一个，不按题目拆人。
 
 ## 一眼看懂谁干什么
 
