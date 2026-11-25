@@ -1,24 +1,40 @@
 # Run Index
 
-*Every run directory in this repository, what produced it, and how to read it.*
+*每个 run 目录是什么、由谁产出、能不能当基线。*
 
-| Directory | Episodes | Produced by | Notes |
-|---|---|---|---|
-| `runs/dev_baselines/DEV/A/` | 16 | Job 14062955 (11-22) | First-round baseline, condition A |
-| `runs/dev_baselines/DEV/B/` | 16 | Job 14062956 (11-22) | First-round baseline, condition B |
-| `runs/dev_baselines/DEV/A/pilot_14051965/` | 1 | Job 14051965 (11-22) | Kept for the record: pilot run during the 1.3 tok/s era; its `task_timeout` is an artifact of the missing FLA kernel, not a protocol result |
-| `runs/eval_baselines/EVAL/A/` | 27 | Job 14062957 (11-22) | Evaluation set, condition A |
-| `runs/eval_baselines/EVAL/B/` | 27 | Job 14062958 (11-22) | Evaluation set, condition B |
-| `runs/repro_check/` | 1 | Job 14072303 (11-23) | Reproducibility check: DEV-B `interstellar_trade_transaction` re-run; compare against the DEV-B baseline episode |
+## 1. 批次表
 
-## Record format (per episode directory)
+| 目录 | 记录数 | 产出作业 | 代码 commit | 用途 | 能否当基线 |
+|---|---:|---|---|---|---|
+| `runs/dev_full_v4/` | 32（16 任务 × A/B） | 14100888（A）/ 14100889（B） | `8be4109` | **当前基线**：审计格式（`raw_model_text`/`events`/`feedback`、两个 final-answer 语义位、1 起 `turn_index`、逐条 `code_commit`+`model_revision`） | **是** |
+| `runs/dev_full_v3/` | 32（16 任务 × A/B） | 14100661 / 14100662（A）、14100663（B）、14100854（B 单槽补跑） | `c7145fa` | 已被 v4 取代：turn 字段名（`raw_text`/`tool_events`）与 0 起 `turn_index` 不被审计读取器接受；32 个答案与 v4 逐条相同 | 否，仅证据 |
+| `runs/dev_baselines/` | 33（16×2 + pilot 1） | 14062955 / 14062956 | `8c1f481` | 首轮基线；提示签名错误（`find_flights` 少一参、`reverse_string/string_length` 参数名错） | 否，仅诊断 |
+| `runs/dev_baselines/DEV/A/pilot_14051965/` | 1 | 14051965 | — | 1.3 tok/s 时代的 pilot；它的 `task_timeout` 是缺 FLA 内核的产物，不是协议结果 | 否 |
+| `runs/eval_baselines/` | 54（27×2） | 14062957 / 14062958 | `8c1f481` | 首轮 EVAL，同上 | 否，仅诊断 |
+| `runs/dev_fix_check/` | 4（2 任务 × A/B） | 14086329 / 14086330、14089396 / 14089397 | `d6e69a4` | v1 修复验证：签名已对，但 180s 还拦不住生成（trade 跑到 236.5s / 255.3s） | 否，修复前证据 |
+| `runs/dev_fix_check_v2/` | 2（1 任务 × A/B） | 14093189 / 14093190 | `7af057d` | v2 修复验证：180s 截断 + 预留最终轮 | 否，样例 |
+| `runs/repro_check/` | 1 | 14072303 | `8c1f481` | 复现性抽查（DEV-B 单题重跑） | 否 |
+| `runs/smoke/` | 1 | 14051595 | — | 环境冒烟输出 | 否 |
 
-- `episode.json` — outcome: status, termination reason, final answer, model calls, token counts, tool attempt counts (executed/blocked), wall seconds.
-- `manifest.json` — environment fingerprint: config SHA-256 hashes, model revision, git commit.
-- `turns.jsonl` — one JSON object per turn: full messages, raw generation text, parse result, tool events (7 fields each), feedback text, budget state.
+## 2. 基线怎么用
 
-## Reading recipes
+- 槽位索引：`runs/dev_full_v4/index.jsonl`（32 行，只指向 `episode.json`）。`runs/dev_full_v3/index.jsonl` 是旧批次，勿混用。
+- 逐任务评分：`runs/dev_full_v4/scored.jsonl`（C 的 `scripts/score.py` 产出）。**注意**：`score.py` 的目录模式会把 `manifest.json` 也当 episode（manifest 含 `task_id`/`condition`），必须传 `*.jsonl` 索引，否则条数翻倍。
+- 汇总：`python scripts/run_stats.py --runs runs/dev_full_v4/DEV`（只读 episode.json，`pilot_*` 自动跳过）。
+- 审计：`runs/dev_full_v4/audit.json`（C 的 `audit_results.py`）；剩余 2 个 error 是 `blocked` 被计入上限的口径问题，按课程语义的复核见 `scripts/check_budget_accounting.py`（PASS）与 `docs/A_dev_baseline_handoff.md` §5。
+- 自洽性：`python scripts/check_run_records.py runs/dev_full_v4`（三件套齐全、`model_calls` 与 turns 行数一致、token 对得上、轮次连续）。
+- 隔离：`python scripts/check_answer_isolation.py --runs runs/dev_full_v4`（记录里不出现参考答案痕迹）。
 
-- Task A/B comparison for the demo: `runs/dev_baselines/DEV/A/*<task>*` vs `runs/dev_baselines/DEV/B/*<task>*`, diff the `feedback_text` fields turn by turn.
-- Failure classification: see `docs/failure_taxonomy.md`.
-- Environment provenance of any episode: read its `manifest.json`, cross-check against `configs/versions.json`.
+## 3. 记录格式（每个 episode 目录）
+
+- `episode.json` — 结论：status、termination reason、final answer、model calls、token、工具执行/拦截、wall seconds、时间戳（`fc67310` 起）。
+- `manifest.json` — 指纹：`team_commit`、`upstream_commit`、模型 revision、课程文件 hash、limits、stop_text、started_at。
+- `turns.jsonl` — 每次模型调用一行：实际 messages、生成设置、原始文本、解析结果、工具事件（7 字段）、Python 输出、模型可见反馈、token、耗时、预算快照。
+
+字段级说明见 `docs/log_fields.md`。
+
+## 4. 读法
+
+- A/B 对照：`runs/dev_full_v3/DEV/A/*<task>*` vs `DEV/B/*<task>*`，逐轮 diff `feedback_text`。
+- 失败归因：`docs/failure_taxonomy.md`（首轮口径）+ `runs/dev_full_v3/stats.md`。
+- 环境溯源：读任一 `manifest.json`，与 `configs/versions.json`、`docs/env_and_config.md` 对照。

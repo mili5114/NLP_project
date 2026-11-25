@@ -11,13 +11,15 @@
 
 from __future__ import annotations
 
+import dataclasses
 import json
 import tempfile
+import time
 import unittest
 from pathlib import Path
 
 from src.feedback.baselines import feedback_official_output, feedback_trace_first
-from src.runtime.backend import FakeBackend
+from src.runtime.backend import FakeBackend, Generation
 from src.runtime.config import load_course_config
 from src.runtime.runner import build_system_prompt, run_episode
 from src.runtime.tasks import get_task
@@ -36,6 +38,31 @@ SETTINGS = {
 
 def action(code: str) -> str:
     return f"Action:\n{code}\nEnd Action"
+
+
+class DeadlineBackend(FakeBackend):
+    """模拟慢模型：一次生成跨过任务截止时刻，返回 finish_reason=deadline。
+
+    真实后端用 Transformers 的 StoppingCriteria 在 180s 处截断；这里用 sleep 把
+    task_seconds 缩到 0.2s，复现同一语义（不必占 GPU）。
+    """
+
+    def __init__(self, *, delay: float, **kwargs) -> None:
+        super().__init__(**kwargs)
+        self.delay = delay
+
+    def generate(self, messages, *, max_new_tokens: int, deadline: float | None = None):
+        time.sleep(self.delay)
+        gen = super().generate(messages, max_new_tokens=max_new_tokens, deadline=deadline)
+        cut = deadline is not None and time.monotonic() >= deadline
+        return Generation(
+            text=gen.text,
+            prompt_tokens=gen.prompt_tokens,
+            completion_tokens=gen.completion_tokens,
+            elapsed_seconds=self.delay,
+            hit_stop=gen.hit_stop,
+            finish_reason="deadline" if cut else gen.finish_reason,
+        )
 
 
 class EpisodeTest(unittest.TestCase):
@@ -110,6 +137,99 @@ class EpisodeTest(unittest.TestCase):
         self.assertTrue(last["generation_settings"]["is_final_turn"])
         self.assertEqual(last["generation_settings"]["max_new_tokens"], 128)
 
+    def test_generate_receives_task_deadline(self) -> None:
+        """每次 generate 都带上任务 180s 截止时刻（后端在生成中途截断用）。"""
+        result, _root, backend = self.run_episode(
+            [action("print('x')"), "Answer: ok"]
+        )
+        self.assertEqual(result["episode"]["termination_reason"], "answer")
+        self.assertEqual(len(backend.seen_deadlines), backend.calls)
+        self.assertTrue(all(d is not None for d in backend.seen_deadlines))
+        self.assertEqual(len(set(backend.seen_deadlines)), 1)  # 同一集内截止时刻不变
+        # 截止时刻 = episode 起点 + task_seconds，必然在未来一点的位置
+        self.assertGreater(backend.seen_deadlines[0], 0)
+
+    def _short_task_cfg(self, seconds: float):
+        raw = {**self.cfg.raw, "limits": {**self.cfg.raw["limits"], "task_seconds": seconds}}
+        return dataclasses.replace(self.cfg, raw=raw)
+
+    def test_deadline_cut_records_generation_stop_and_persist_separately(self) -> None:
+        """180s 到点截断：这一轮照常落盘，但不执行动作、不进最终轮。
+
+        同时验证日志能把"生成停止"和"最终落盘"分开（课程 180s 是任务截止，
+        185s 只是含停止/同步/落盘的工程检查线）。
+        """
+        cfg = self._short_task_cfg(0.2)
+        backend = DeadlineBackend(
+            delay=0.3,
+            replies=[action("print('should not run')"), "Answer: 1"],
+            stop_text=cfg.stop_text,
+        )
+        tmp = tempfile.mkdtemp(prefix="nlp-test-")
+        result = run_episode(
+            task_id=TASK, condition="A", cfg=cfg, backend=backend, runs_root=tmp, split="DEV"
+        )
+        ep = result["episode"]
+        self.assertEqual(ep["termination_reason"], "task_timeout")
+        self.assertEqual(ep["status"], "timeout")
+        self.assertIsNone(ep["final_answer"])
+        self.assertEqual(ep["model_calls"], 1, "时间耗尽后不得再请求最终轮")
+        self.assertEqual(ep["tool_attempts_executed"], 0, "被截止的轮次不执行动作")
+
+        lines = Path(result["turns_path"]).read_text(encoding="utf-8").splitlines()
+        self.assertEqual(len(lines), 1)
+        turn = json.loads(lines[0])
+        self.assertTrue(turn["cut_by_deadline"])
+        self.assertEqual(turn["finish_reason"], "deadline")
+        self.assertIsNone(turn["action"])
+        self.assertEqual(
+            turn["feedback_metadata"]["note"], "generation_cut_by_task_timeout"
+        )
+
+        ep_json = json.loads(Path(result["episode_path"]).read_text(encoding="utf-8"))
+        self.assertEqual(ep_json["task_seconds_limit"], 0.2)
+        self.assertGreaterEqual(ep_json["generation_stopped_task_seconds"], 0.2)
+        self.assertGreaterEqual(
+            ep_json["episode_written_task_seconds"],
+            ep_json["generation_stopped_task_seconds"],
+        )
+        self.assertGreaterEqual(ep_json["post_generation_seconds"], 0.0)
+        self.assertLess(ep_json["post_generation_seconds"], 1.0, "落盘开销应是毫秒级")
+        self.assertTrue(ep_json["deadline_exceeded"])
+        self.assertIsNotNone(ep_json["generation_stopped_at"])
+        self.assertIsNotNone(ep_json["episode_written_at"])
+
+    def test_timing_fields_present_on_normal_episode(self) -> None:
+        result, _root, _backend = self.run_episode([action("print(1)"), "Answer: 7"])
+        ep = json.loads(Path(result["episode_path"]).read_text(encoding="utf-8"))
+        for key in (
+            "task_started_at",
+            "task_deadline_at",
+            "task_seconds_limit",
+            "generation_stopped_at",
+            "generation_stopped_task_seconds",
+            "last_generation_finish_reason",
+            "episode_written_at",
+            "episode_written_task_seconds",
+            "post_generation_seconds",
+            "deadline_overrun_seconds",
+            "deadline_exceeded",
+        ):
+            self.assertIn(key, ep)
+        self.assertFalse(ep["deadline_exceeded"])
+        self.assertEqual(ep["deadline_overrun_seconds"], 0)
+        self.assertLessEqual(ep["generation_stopped_at"], ep["episode_written_at"])
+        self.assertGreaterEqual(
+            ep["episode_written_task_seconds"], ep["generation_stopped_task_seconds"]
+        )
+
+        turn = json.loads(
+            Path(result["turns_path"]).read_text(encoding="utf-8").splitlines()[0]
+        )
+        self.assertIn("generation_seconds", turn)
+        self.assertFalse(turn["cut_by_deadline"])
+        self.assertEqual(turn["finish_reason"], "stop")
+
     def test_no_answer_records_null(self) -> None:
         replies = [action("print('thinking')")] * (self.cfg.limits.interaction_turns + 5)
         result, root, _backend = self.run_episode(replies)
@@ -154,7 +274,7 @@ class EpisodeTest(unittest.TestCase):
         self.assertIn("a_ok= True", first["python_output"])
         self.assertIn("b_ok= True", first["python_output"])
         self.assertIn("e_is_none= True", first["python_output"])
-        self.assertEqual(first["tool_events"][-1]["execution_status"], "blocked")
+        self.assertEqual(first["events"][-1]["execution_status"], "blocked")
 
     def test_task_level_limit_32(self) -> None:
         code = "find_flights('E', 'A', '2023-12-25')\n" * 4
@@ -175,7 +295,31 @@ class EpisodeTest(unittest.TestCase):
         self.assertIn("NameError", first["python_output"])
         self.assertEqual(result2["episode"]["status"], "completed")
 
-    # ---------- 记录里不能有答案 ----------
+    # ---------- 记录契约：必须被 C 的审计读取器直接接受 ----------
+    def test_record_matches_audit_contract(self) -> None:
+        from src.evaluation.turns_reader import read_turns
+
+        result, _root, _backend = self.run_episode([action("print(1)"), "Answer: 3"])
+        turns = read_turns(result["turns_path"])  # 缺字段/类型错会抛 InputError
+        self.assertEqual([t["turn_index"] for t in turns], list(range(1, len(turns) + 1)))
+        produced = [t for t in turns if t["produced_final_answer"]]
+        self.assertEqual(len(produced), 1)
+        self.assertFalse(produced[0]["is_final_answer_turn"])  # 交互轮答出，仍受 384
+        ep = result["episode"]
+        self.assertRegex(str(ep.get("code_commit")), r"^[0-9a-f]{40}$")
+        self.assertEqual(ep.get("model_revision"), self.cfg.model["revision"])
+
+    def test_final_only_turn_is_flagged(self) -> None:
+        from src.evaluation.turns_reader import read_turns
+
+        replies = [action("print(1)") for _ in range(12)] + ["Answer: 7"]
+        result, _root, _backend = self.run_episode(replies)
+        turns = read_turns(result["turns_path"])
+        self.assertTrue(turns[-1]["is_final_answer_turn"])
+        self.assertTrue(turns[-1]["produced_final_answer"])
+        self.assertEqual([i for i, t in enumerate(turns) if t["is_final_answer_turn"]], [len(turns) - 1])
+        self.assertEqual(result["episode"]["final_answer"], "7")
+
     def test_no_reference_leak(self) -> None:
         result, root, _backend = self.run_episode([action("print('x')"), "Answer: 450"])
         episode_dir = Path(result["episode_path"]).parent
@@ -198,6 +342,41 @@ class EpisodeTest(unittest.TestCase):
         ep = result["episode"]
         self.assertEqual(
             ep["input_tokens"], sum(json.loads(x)["input_tokens"] for x in lines)
+        )
+
+
+class BudgetLimitTest(unittest.TestCase):
+    """预算上限的边界：上下文、每轮 384、总 3072 里预留最终轮 128。"""
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls.limits = load_course_config().limits
+
+    def test_context_cap_zeroes_generation(self) -> None:
+        from src.runtime.budget import Budget
+
+        budget = Budget(self.limits)
+        alloc = budget.allocate(prompt_tokens=self.limits.context_tokens + 1)
+        self.assertEqual(alloc.remaining_context, 0)
+        self.assertEqual(alloc.max_new_tokens, 0)
+
+    def test_turn_cap_is_384_and_reserve_is_128(self) -> None:
+        from src.runtime.budget import Budget
+
+        budget = Budget(self.limits)
+        self.assertEqual(
+            budget.allocate(prompt_tokens=10).max_new_tokens,
+            self.limits.tokens_per_interaction,
+        )
+        budget.charge(
+            completion_tokens=self.limits.total_generated_tokens
+            - self.limits.final_answer_tokens
+        )
+        # 交互轮分不到预算（只剩预留给最终轮的 128），最终轮仍能拿到 128
+        self.assertEqual(budget.allocate(prompt_tokens=10).max_new_tokens, 0)
+        self.assertEqual(
+            budget.allocate(prompt_tokens=10, is_final=True).max_new_tokens,
+            self.limits.final_answer_tokens,
         )
 
 

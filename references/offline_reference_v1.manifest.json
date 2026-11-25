@@ -1,0 +1,277 @@
+{
+  "schema_version": "1",
+  "synthetic": false,
+  "offline_only": true,
+  "generated_at": "2026-11-24T14:08:51+00:00",
+  "generated_by": "scripts/export_references.py",
+  "upstream_code_commit": "d607f56c9cfe9e8632ebaf65dcaf2b4b7fe1c6f8",
+  "model_revision": "851bf6e806efd8d0a36b00ddf55e13ccb7b8cd0a",
+  "split_manifest_sha256": "ed7e35aad947c7b64d6748ffac7343f7bd833e794f8fbc402dd54a55c555cbfe",
+  "counts": {
+    "DEV": 16,
+    "EVAL": 27
+  },
+  "content_sha256": "683697256d7431d3253aacd58850ed0209d244cef460099714685f242b3118e4",
+  "answers_in_git": false,
+  "reproduce": "python scripts/export_references.py --out <path>",
+  "entries": [
+    {
+      "task_id": "message_decoder/specific_decoded_character",
+      "split": "DEV",
+      "answer_type": "string",
+      "reference_sha256": "4756c98049812530dbb1f1786b8a63c380ea636bb2097fb015bbe5e28553d7a7"
+    },
+    {
+      "task_id": "message_decoder/maximum_value_decoding",
+      "split": "DEV",
+      "answer_type": "numeric",
+      "reference_sha256": "55c8079ac96c6a4f6a94e3460c79e4006d62374cce6e9fc8b281938a3abc7627"
+    },
+    {
+      "task_id": "trade_calculator/interstellar_trade_transaction",
+      "split": "DEV",
+      "answer_type": "numeric",
+      "reference_sha256": "8655b8b588b608415bede34f7c8f4c2167123f176b8dbad5b2214a4771b11024"
+    },
+    {
+      "task_id": "travel_itinerary_planning/cheapest_new_york_trip",
+      "split": "DEV",
+      "answer_type": "numeric",
+      "reference_sha256": "3de8392541ace28284aca7f2724273739fcf4cf73de276a8ddd3547c0011323c"
+    },
+    {
+      "task_id": "travel_itinerary_planning/new_york_trip_with_specific_preferences",
+      "split": "DEV",
+      "answer_type": "numeric",
+      "reference_sha256": "3de8392541ace28284aca7f2724273739fcf4cf73de276a8ddd3547c0011323c"
+    },
+    {
+      "task_id": "travel_itinerary_planning/multi_city_business_trip",
+      "split": "DEV",
+      "answer_type": "numeric",
+      "reference_sha256": "ffa6059b954a4602a9fa1518d10ca6163bce3f9d4bd3ee51c860eb6c2da16675"
+    },
+    {
+      "task_id": "web_browsing/email_of_allison_hill",
+      "split": "DEV",
+      "answer_type": "string",
+      "reference_sha256": "33b496fad47ef6158991f42f4c7dfd0258030fa0adfe7d25a51d988c709bb19c"
+    },
+    {
+      "task_id": "web_browsing/price_of_legendary_wand",
+      "split": "DEV",
+      "answer_type": "numeric",
+      "reference_sha256": "6ff3c41d0263dcd96f112ff35f4bf8fac281101fa9afcf4c8c82ecbbf43a1a00"
+    },
+    {
+      "task_id": "message_decoder/multi_step_decoding_challenge",
+      "split": "DEV",
+      "answer_type": "string",
+      "reference_sha256": "d4ac769a5db9938b1831ed155ff27d602bd161370613e61f76ce2d5fb7fa7d05"
+    },
+    {
+      "task_id": "trade_calculator/bulk_trade_quantity_discount",
+      "split": "DEV",
+      "answer_type": "numeric",
+      "reference_sha256": "fc389a7cc41b0761bd645168f70601ccc57cb756c96d02211147761053f99e70"
+    },
+    {
+      "task_id": "trade_calculator/optimizing_bulk_purchase_discounts",
+      "split": "DEV",
+      "answer_type": "numeric",
+      "reference_sha256": "a3c97d1d3948a77d9615799a7e1973b448e0c8ee5a3ac5dbdc13eff41213b937"
+    },
+    {
+      "task_id": "travel_itinerary_planning/adventure_trip",
+      "split": "DEV",
+      "answer_type": "numeric",
+      "reference_sha256": "2f8375d2a98f83f0aed5fb0d64b6e805901267915321ceb9d3a2063b60d05cbb"
+    },
+    {
+      "task_id": "web_browsing/expertise_of_allison_hill",
+      "split": "DEV",
+      "answer_type": "string",
+      "reference_sha256": "64ccbd5f4c041bd2394dab9ebb6732fb1e27ee26a4283d8ccbf2ed047104e076"
+    },
+    {
+      "task_id": "web_browsing/total_price_of_selected_items_0",
+      "split": "DEV",
+      "answer_type": "numeric",
+      "reference_sha256": "ef83e8bfe401e44562f750053d61336f361499caee0932e7f12b1a242ed3e55e"
+    },
+    {
+      "task_id": "web_browsing/people_in_sales",
+      "split": "DEV",
+      "answer_type": "numeric",
+      "reference_sha256": "4b227777d4dd1fc61c6f884f48641d02b4d121d3fd328cb08b5531fcacdabf8a"
+    },
+    {
+      "task_id": "web_browsing/price_of_legendary_potion",
+      "split": "DEV",
+      "answer_type": "numeric",
+      "reference_sha256": "ef10207d72276a5960dd13dbac8bd37a43a6a1e9d6eaabf9681ada42db9f6448"
+    },
+    {
+      "task_id": "message_decoder/length_based_decoding_puzzle",
+      "split": "EVAL",
+      "answer_type": "string",
+      "reference_sha256": "a2069eb473dc91bedd2048928a74c6f4d390ce07d081e566b469b04efa465623"
+    },
+    {
+      "task_id": "message_decoder/shortest_caesar_decoded_message",
+      "split": "EVAL",
+      "answer_type": "numeric",
+      "reference_sha256": "4e07408562bedb8b60ce05c1decfe3ad16b72230967de01f640b7e4729b49fce"
+    },
+    {
+      "task_id": "trade_calculator/comparative_profit_analysis",
+      "split": "EVAL",
+      "answer_type": "numeric",
+      "reference_sha256": "a0cd9f0b61fec1603cca7bd483683e3b3c0f60b387e38eff453c4716fcf95aaf"
+    },
+    {
+      "task_id": "trade_calculator/currency_fluctuation_hedging",
+      "split": "EVAL",
+      "answer_type": "numeric",
+      "reference_sha256": "4e9cf08a28a5bfee1afd8f181d38c8085130deb3c6a6f445b29f575df2c41a7b"
+    },
+    {
+      "task_id": "trade_calculator/optimal_trade_route_multiple_commodities",
+      "split": "EVAL",
+      "answer_type": "numeric",
+      "reference_sha256": "b17aa401a76a585a6bd01dccc103b32c468e5c884897dcb7f46bb4cf3ddb9b3b"
+    },
+    {
+      "task_id": "trade_calculator/taxed_commodity_export",
+      "split": "EVAL",
+      "answer_type": "numeric",
+      "reference_sha256": "1cad6a67f0485eedb47aa4ce8f5c0ddd143ccc326a72d6b5c004f0a2e347b3e0"
+    },
+    {
+      "task_id": "trade_calculator/variable_tariff_profit_maximization",
+      "split": "EVAL",
+      "answer_type": "numeric",
+      "reference_sha256": "cc3fe156f305a49a42737634c8dc7802cc5d87ad4bb8ecc1d5e443ad0901dc60"
+    },
+    {
+      "task_id": "travel_itinerary_planning/budget_trip_to_paris",
+      "split": "EVAL",
+      "answer_type": "numeric",
+      "reference_sha256": "2099a9b5f777e242d1f9e19d27e232cc71e2fa7964fc988a319fce5671ca7f73"
+    },
+    {
+      "task_id": "travel_itinerary_planning/grand_tour_vacation",
+      "split": "EVAL",
+      "answer_type": "numeric",
+      "reference_sha256": "a1e1e86414fd481e6af4ab2cf7a350a97edde2805e8a1aa3b2157883fe32181f"
+    },
+    {
+      "task_id": "travel_itinerary_planning/last_minute_tokyo_trip",
+      "split": "EVAL",
+      "answer_type": "numeric",
+      "reference_sha256": "8b6cd7c429e83373dbd412f43d7422c0c4a127d93d0f2ad15909f0c2a3e7b320"
+    },
+    {
+      "task_id": "travel_itinerary_planning/leisure_and_business_combo",
+      "split": "EVAL",
+      "answer_type": "numeric",
+      "reference_sha256": "871c39835ef093344f55dd14dab9ea54a4e9d76ee5634fff2e2be7d8e656be8b"
+    },
+    {
+      "task_id": "travel_itinerary_planning/leisure_multi_city_trip",
+      "split": "EVAL",
+      "answer_type": "numeric",
+      "reference_sha256": "055f78940c07630352676197ab7c3ed8d5bb204d406e5c6ff101f870bc9b7dd7"
+    },
+    {
+      "task_id": "travel_itinerary_planning/london_business_trip",
+      "split": "EVAL",
+      "answer_type": "numeric",
+      "reference_sha256": "728bf33aab1d32d4dca8fcc6a020d8baeb6b9910104541aa68c2d408154734fc"
+    },
+    {
+      "task_id": "travel_itinerary_planning/luxury_tokyo_trip",
+      "split": "EVAL",
+      "answer_type": "numeric",
+      "reference_sha256": "07e9bba1c63a7a01f935ee06d931c453e0864fc0fcc11ec445a8af60a36cc6c8"
+    },
+    {
+      "task_id": "travel_itinerary_planning/new_york_holiday_season",
+      "split": "EVAL",
+      "answer_type": "numeric",
+      "reference_sha256": "22b954454cfc20ef4813c70018c81004795496191338841e0ca4b9ed6e04e81a"
+    },
+    {
+      "task_id": "travel_itinerary_planning/three_city_european_tour",
+      "split": "EVAL",
+      "answer_type": "numeric",
+      "reference_sha256": "5bc05e241527d767aae5d0921978e11918f632b8cefc1de520745e9b9ffd09c4"
+    },
+    {
+      "task_id": "web_browsing/email_of_henry_santiago",
+      "split": "EVAL",
+      "answer_type": "string",
+      "reference_sha256": "d110a6ea035b7fe7b0146f2effb365ce164b97697e5af3dc5e3c23a479e7eda1"
+    },
+    {
+      "task_id": "web_browsing/email_of_kimberly_dudley",
+      "split": "EVAL",
+      "answer_type": "string",
+      "reference_sha256": "cad07695eac88db979ceb69a7c1e268a7790c8765fb0893bb7475c0030d2b180"
+    },
+    {
+      "task_id": "web_browsing/email_of_meredith_barnes",
+      "split": "EVAL",
+      "answer_type": "string",
+      "reference_sha256": "710aff0907af4030c432111d8de2f905c3a49934bdce643b32595a569539d3c2"
+    },
+    {
+      "task_id": "web_browsing/expertise_of_henry_santiago",
+      "split": "EVAL",
+      "answer_type": "string",
+      "reference_sha256": "64ccbd5f4c041bd2394dab9ebb6732fb1e27ee26a4283d8ccbf2ed047104e076"
+    },
+    {
+      "task_id": "web_browsing/expertise_of_kimberly_dudley",
+      "split": "EVAL",
+      "answer_type": "string",
+      "reference_sha256": "ba42c3428819d27025637ce6b2e0040e62b42082de7e2476d8dc43a9141208e1"
+    },
+    {
+      "task_id": "web_browsing/expertise_of_meredith_barnes",
+      "split": "EVAL",
+      "answer_type": "string",
+      "reference_sha256": "8acf57e3d9c0bffb751b2ee7b95fa2ec59fb033fe77125e27bf664f3990d104c"
+    },
+    {
+      "task_id": "web_browsing/price_of_legendary_crystal_ball",
+      "split": "EVAL",
+      "answer_type": "numeric",
+      "reference_sha256": "031dcdcd6674af2df2a1bc46b93d9ccbbff3d5906e5c44586cf7dcea06b08d52"
+    },
+    {
+      "task_id": "web_browsing/price_of_legendary_spellbook",
+      "split": "EVAL",
+      "answer_type": "numeric",
+      "reference_sha256": "c571ba2497e02f90fc12a40f7843727830226510d3d36d837079c76fb77a033a"
+    },
+    {
+      "task_id": "web_browsing/total_price_of_selected_items_1",
+      "split": "EVAL",
+      "answer_type": "numeric",
+      "reference_sha256": "b421d2515911c1f8ef868e342b0b43ff633ba5590dc11e6af569960393082c82"
+    },
+    {
+      "task_id": "web_browsing/total_price_of_selected_items_2",
+      "split": "EVAL",
+      "answer_type": "numeric",
+      "reference_sha256": "1047979fdd93f4bcaf32fb7050b95eee39a35906827a9a52f2c462858fb7bed7"
+    },
+    {
+      "task_id": "web_browsing/total_price_of_selected_items_3",
+      "split": "EVAL",
+      "answer_type": "numeric",
+      "reference_sha256": "13f49c797dc6d6e50e64e3aeae886bed737b0ef801ab207d5d16f0c15dc5824d"
+    }
+  ]
+}

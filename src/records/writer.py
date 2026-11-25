@@ -51,19 +51,32 @@ class EpisodeWriter:
     def write_turn(self, turn: dict[str, Any]) -> None:
         if self._turns_fh is None:
             raise RuntimeError("writer 未 open()")
-        record = {"turn_index": self.turn_count, **turn}
+        record = {"turn_index": self.turn_count + 1, **turn}
         self._turns_fh.write(json.dumps(record, ensure_ascii=False) + "\n")
         self._turns_fh.flush()
         self.turn_count += 1
 
-    def close(self, episode: dict[str, Any]) -> Path:
+    def close(
+        self,
+        episode: dict[str, Any],
+        *,
+        timings: dict[str, Any] | None = None,
+        written_at: float | None = None,
+    ) -> Path:
+        """`timings` 里放"生成停止/落盘"时间戳（由 runner 提供）。
+
+        课程 180s 是任务截止时间；185s 只是包含停止、同步、落盘的工程检查线。
+        因此记录里必须能分开这两件事：墙钟总时长 `wall_seconds` 不等于生成耗时。
+        """
         if self._turns_fh is not None:
             self._turns_fh.close()
             self._turns_fh = None
+        written = time.time() if written_at is None else written_at
         payload = {
             "schema_version": SCHEMA_VERSION,
             "trajectory_path": str(self.turns_path.as_posix()),
-            "wall_seconds": round(time.time() - self._started, 3),
+            "wall_seconds": round(written - self._started, 3),
+            **(timings or {}),
             **episode,
         }
         out = self.dir / "episode.json"

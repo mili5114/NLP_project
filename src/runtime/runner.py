@@ -10,6 +10,7 @@
 from __future__ import annotations
 
 import subprocess
+import time
 from pathlib import Path
 from typing import Any
 
@@ -20,6 +21,11 @@ from .config import CourseConfig, repo_root, safe_slug
 from .observer import ToolObserver
 from .repl import BlockExecutor
 from .tasks import action_mode, get_task
+
+
+def _iso(ts: float) -> str:
+    """本地时区 ISO 时间戳（与 manifest.started_at 同格式）。"""
+    return time.strftime("%Y-%m-%dT%H:%M:%S%z", time.localtime(ts))
 
 
 def _git_head() -> str:
@@ -92,6 +98,20 @@ def run_episode(
     repl = BlockExecutor(task._ns, limits.action_seconds)
     budget = Budget(limits)
 
+    # 时间口径：180s 是任务截止（budget.deadline）；185s 只是含停止/同步/落盘的
+    # 工程检查线。这两个时刻必须分别可查，不能只留一个 wall_seconds。
+    task_started_wall = time.time()
+    task_deadline_wall = task_started_wall + limits.task_seconds
+    last_generation: dict[str, Any] | None = None
+
+    def _mark_generation(gen: Any) -> None:
+        nonlocal last_generation
+        last_generation = {
+            "stopped_at": time.time(),
+            "task_seconds": time.monotonic() - budget.started_at,
+            "finish_reason": gen.finish_reason,
+        }
+
     manifest = {
         "run_id": run_id,
         "split": split,
@@ -148,14 +168,27 @@ def run_episode(
         feedback_text: str | None,
         feedback_metadata: dict[str, Any] | None,
         is_final: bool,
+        produced_answer: bool = False,
         exec_seconds: float = 0.0,
     ) -> None:
+        """写一行 turns.jsonl。
+
+        字段名与 `docs/interfaces.md` §3 及 C 的 `turns_reader.REQUIRED_TURN_FIELDS` 对齐：
+        `raw_model_text` / `events` / `feedback` / `produced_final_answer` / `is_final_answer_turn`。
+        两个“最终回答”概念分开记：交互轮直接给出 Answer 时 `produced_final_answer=True`
+        且 `is_final_answer_turn=False`（仍受 384 限制）；预算耗尽后追加的仅回答轮
+        `is_final_answer_turn=True`（受 128 限制）。
+        """
         nonlocal total_input_tokens, total_output_tokens, model_calls
         total_input_tokens += int(gen.prompt_tokens)
         total_output_tokens += int(gen.completion_tokens)
         model_calls += 1
+        elapsed = round(float(gen.elapsed_seconds) + exec_seconds, 6)
         writer.write_turn(
             {
+                # turn_index 由 EpisodeWriter 统一编号（1 起、逐行递增），这里不要覆盖。
+                "is_final_answer_turn": is_final,
+                "produced_final_answer": produced_answer,
                 "messages": snapshot,
                 "generation_settings": {
                     "max_new_tokens": max_new_tokens,
@@ -164,16 +197,28 @@ def run_episode(
                     "stop_text": cfg.stop_text,
                     "is_final_turn": is_final,
                 },
-                "raw_text": gen.text,
+                "raw_model_text": gen.text,
                 "parsed": parsed,
+                "parsed_action": parsed,
                 "action": action,
-                "tool_events": events,
+                "events": events,
                 "python_output": python_output,
-                "feedback_text": feedback_text,
+                "feedback": feedback_text,
                 "feedback_metadata": feedback_metadata,
                 "input_tokens": int(gen.prompt_tokens),
                 "output_tokens": int(gen.completion_tokens),
-                "elapsed_seconds": round(float(gen.elapsed_seconds) + exec_seconds, 6),
+                # elapsed_seconds 含本轮代码块执行；generation_seconds 只是模型生成耗时。
+                "elapsed_seconds": elapsed,
+                "wall_seconds": elapsed,
+                "generation_seconds": round(float(gen.elapsed_seconds), 6),
+                "finish_reason": gen.finish_reason,
+                "cut_by_deadline": gen.finish_reason == "deadline",
+                "generation_stopped_at": (
+                    _iso(last_generation["stopped_at"]) if last_generation else None
+                ),
+                "generation_stopped_task_seconds": (
+                    round(last_generation["task_seconds"], 3) if last_generation else None
+                ),
                 "budget": budget.snapshot(),
             }
         )
@@ -195,7 +240,10 @@ def run_episode(
             # （课程附件 §2：交互轮始终为最终答案预留 128 token）。
             break
 
-        gen = backend.generate(messages, max_new_tokens=alloc.max_new_tokens)
+        gen = backend.generate(
+            messages, max_new_tokens=alloc.max_new_tokens, deadline=budget.deadline
+        )
+        _mark_generation(gen)
         budget.charge(completion_tokens=gen.completion_tokens)
         parsed = task.parse_generation(gen.text)
         turn_index += 1
@@ -214,12 +262,33 @@ def run_episode(
                 feedback_text=None,
                 feedback_metadata=None,
                 is_final=False,
+                produced_answer=True,
             )
+            break
+
+        if budget.task_expired:
+            # 生成在 180 秒截止时被截断（或刚好到点）：照常落盘这一轮，
+            # 但不执行动作、不进最终轮——附件 §2 要求到点就结束任务。
+            _record_turn(
+                snapshot=snapshot,
+                gen=gen,
+                parsed=parsed,
+                max_new_tokens=alloc.max_new_tokens,
+                action=None,
+                events=[],
+                python_output=None,
+                feedback_text=None,
+                feedback_metadata={"note": "generation_cut_by_task_timeout"},
+                is_final=False,
+            )
+            termination = "task_timeout"
             break
 
         if parsed["type"] == "action":
             observer.start_block(turn_index)
-            result = repl.run(parsed["content"])
+            # 代码块上限 15s，但也不能越过任务 180s 截止：用剩余时间钳制。
+            exec_timeout = min(limits.action_seconds, budget.seconds_remaining())
+            result = repl.run(parsed["content"], timeout_seconds=exec_timeout)
             events = observer.snapshot()
             fb = build_feedback(
                 python_output=result["stdout"],
@@ -243,7 +312,12 @@ def run_episode(
                 exec_seconds=result["elapsed_seconds"],
             )
             if result["timed_out"]:
-                termination = "action_timeout"
+                # 块超时可能有两个来源：真的超过 15s 块上限，或被 180s 任务截止钳制。
+                termination = (
+                    "task_timeout"
+                    if exec_timeout < limits.action_seconds
+                    else "action_timeout"
+                )
                 break
             continue
 
@@ -276,12 +350,18 @@ def run_episode(
             alloc = budget.allocate(prompt_tokens=prompt_tokens, is_final=True)
 
             if alloc.max_new_tokens > 0:
-                gen = backend.generate(messages, max_new_tokens=alloc.max_new_tokens)
+                gen = backend.generate(
+                    messages, max_new_tokens=alloc.max_new_tokens, deadline=budget.deadline
+                )
+                _mark_generation(gen)
                 budget.charge(completion_tokens=gen.completion_tokens, is_final=True)
                 parsed = task.parse_generation(gen.text)
                 if parsed["type"] == "answer":
                     final_answer = parsed["content"]
                     termination = f"final_answer_after_{exhausted_by}_exhausted"
+                elif budget.task_expired:
+                    # 最终轮生成被 180 秒截止截断，没来得及写出可解析答案。
+                    termination = "task_timeout"
                 else:
                     termination = f"no_answer_after_{exhausted_by}_exhausted"
                 _record_turn(
@@ -295,6 +375,7 @@ def run_episode(
                     feedback_text=None,
                     feedback_metadata={"note": "final_answer_only_turn"},
                     is_final=True,
+                    produced_answer=parsed["type"] == "answer",
                 )
             else:
                 # 上下文/生成预算真的耗尽到连 128 的最终轮都放不下。
@@ -322,8 +403,40 @@ def run_episode(
         "tool_attempts_executed": observer.executed,
         "tool_attempts_blocked": observer.blocked,
         "config_sha256": cfg.hashes.get("runtime_settings.json"),
+        # C 的审计要求每份正式记录自带版本三元组，不只靠 manifest：
+        # 代码提交与模型 revision 逐条核对，缺任一项即 FAIL。
+        "code_commit": _git_head(),
+        "model_revision": cfg.model["revision"],
     }
-    episode_path = writer.close(episode)
+    written_wall = time.time()
+    written_task_seconds = time.monotonic() - budget.started_at
+    timings = {
+        "task_started_at": _iso(task_started_wall),
+        "task_deadline_at": _iso(task_deadline_wall),
+        "task_seconds_limit": limits.task_seconds,
+        # 最后一次生成停止（模型侧结束，含被 180s 截止截断的情况）
+        "generation_stopped_at": (
+            _iso(last_generation["stopped_at"]) if last_generation else None
+        ),
+        "generation_stopped_task_seconds": (
+            round(last_generation["task_seconds"], 3) if last_generation else None
+        ),
+        "last_generation_finish_reason": (
+            last_generation["finish_reason"] if last_generation else None
+        ),
+        # 最终落盘（本次记录写完的时刻）
+        "episode_written_at": _iso(written_wall),
+        "episode_written_task_seconds": round(written_task_seconds, 3),
+        "post_generation_seconds": (
+            round(written_wall - last_generation["stopped_at"], 3) if last_generation else None
+        ),
+        # 超过课程 180s 的部分；工程检查要求 <= 5s（即总墙钟 <= 185s）
+        "deadline_overrun_seconds": round(
+            max(0.0, written_task_seconds - limits.task_seconds), 3
+        ),
+        "deadline_exceeded": written_task_seconds > limits.task_seconds,
+    }
+    episode_path = writer.close(episode, timings=timings, written_at=written_wall)
 
     return {
         "episode": episode,

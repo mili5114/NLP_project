@@ -35,6 +35,14 @@ class Budget:
     def task_expired(self) -> bool:
         return self.elapsed_seconds >= self.limits.task_seconds
 
+    @property
+    def deadline(self) -> float:
+        """任务绝对截止时刻（time.monotonic() 轴），供后端在生成中途截断。"""
+        return self.started_at + self.limits.task_seconds
+
+    def seconds_remaining(self) -> float:
+        return max(0.0, self.deadline - time.monotonic())
+
     # ---- 轮次 ----
     @property
     def turns_left(self) -> int:

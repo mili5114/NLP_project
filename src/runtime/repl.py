@@ -36,8 +36,9 @@ class BlockExecutor:
         return hasattr(signal, "SIGALRM") and threading.current_thread() is threading.main_thread()
 
     @contextmanager
-    def _time_limit(self):
+    def _time_limit(self, timeout_seconds: float | None = None):
         """返回一个可读标记：True 表示确实被 alarm 中断。"""
+        limit = float(timeout_seconds) if timeout_seconds is not None else self.timeout_seconds
         flag = {"timed_out": False}
         if not self._supports_alarm():
             yield flag
@@ -45,10 +46,10 @@ class BlockExecutor:
 
         def handler(signum, frame):  # noqa: ANN001, ARG001
             flag["timed_out"] = True
-            raise TimeoutError(f"Timed out after {self.timeout_seconds:g} seconds.")
+            raise TimeoutError(f"Timed out after {limit:g} seconds.")
 
         old = signal.signal(signal.SIGALRM, handler)
-        signal.setitimer(signal.ITIMER_REAL, self.timeout_seconds)
+        signal.setitimer(signal.ITIMER_REAL, limit)
         try:
             yield flag
         finally:
@@ -56,7 +57,8 @@ class BlockExecutor:
             signal.signal(signal.SIGALRM, old)
 
     # ---- 执行 ----
-    def run(self, code: str) -> dict[str, Any]:
+    def run(self, code: str, *, timeout_seconds: float | None = None) -> dict[str, Any]:
+        """timeout_seconds：可临时压低超时（任务 180s 截止前用剩余时间钳制）。"""
         from IPython.utils import io
 
         started = time.perf_counter()
@@ -65,7 +67,7 @@ class BlockExecutor:
         stdout = ""
 
         try:
-            with self._time_limit() as flag, io.capture_output() as captured:
+            with self._time_limit(timeout_seconds) as flag, io.capture_output() as captured:
                 result = self.shell.run_cell(code, store_history=False)
                 stdout = captured.stdout
             timed_out = bool(flag["timed_out"])
