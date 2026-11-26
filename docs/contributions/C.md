@@ -107,3 +107,7 @@ python scripts/plot_results.py --summary results/synthetic/summary.json \
 ## 2026-11-25：A 工具预算修复独立验收
 
 复核 de5b037，新增 tests/test_tool_budget_handoff.py 两项 C 集成测试（32 attempts = 4 executed + 28 blocked；final-only Action 不执行），并用 C adapter/auditor交叉检查。全套 138 项 CPU 测试通过，撰写 C_TOOL_BUDGET_FIX_REVIEW_20261125.md，放行新版 DEV，明确旧数据结论和 GPU 证据边界。
+
+## 2026-11-26：DEV v5 独立数据验收
+
+独立重跑正式记录审计、离线评分、绑定汇总、结构/预算/配置检查及 138 项 CPU 测试；核验真实工具预算转换和最终轮禁工具。保存公开审计证据、汇总表、验证回执，生成本地图表，撰写 C_DEV_V5_REVIEW_20261126.md，明确 DEV 与正式 EVAL、真实覆盖与 CPU 证据边界。未执行 GPU / EVAL。
