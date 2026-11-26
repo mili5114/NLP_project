@@ -27,3 +27,4 @@
 - **工具预算耗尽后没有立即进最终轮**（课程附件要求"Move to the final-answer turn when the tool budget is exhausted"）：v4 里 A `multi_city_business_trip` 在 32 次执行用完后仍继续 4 个交互轮、16 次全被拦，直到轮次耗尽才进最终轮。影响 1/32 槽位（该题本就判错）。细节与修法见 `docs/A_dev_baseline_handoff.md` §7；要不要在 EVAL 前修由 B/C 定。
 - v4 时代审计报的 2 个 blocked 计数 error 已由 C 在 `c/real-log-audit`（PR #3）修正口径解决；v5 用修正后的审计 **PASS（0 error / 0 warning）**，见 `docs/A_dev_baseline_handoff.md` §5。
 - v3 批次曾有两个同 `run_id` 的作业并发（14100663 / 14100664）写坏 1 个槽位（后由 14100878 单槽补跑修好）；v4 是单批写到底，不存在拼接。
+- `causal_conv1d` 未安装、走参考实现回退（C 在 v5 验收中指出）：贪心解码 + 跨批次答案逐条一致只能作为**行为稳定**的证据，**不构成跨环境位级可复现保证**；报告中不得写成"bit-identical reproducible"。
