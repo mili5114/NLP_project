@@ -20,12 +20,12 @@
 
 | 报告位置 | 数字 | 来源 |
 |---|---|---|
-| 实验设置 §Throughput and deadline：DEV 有最终答案 | A 16/16、B 15/16 | `runs/dev_full_v4/stats.md` → `DEV/{A,B}/*/episode.json` 的 `final_answer` |
-| 同上：离线正确率（DEV，仅本批） | A 10/16、B 13/16（总 23/32） | `runs/dev_full_v4/scored.jsonl`（`scripts/score.py` + `references/offline_reference_v1.json`） |
-| 同上：中位耗时 / 最大耗时 | 30.4 s / 27.4 s、最大 122.7 s | `runs/dev_full_v4/stats.md`、各 `episode.json` 的 `wall_seconds` |
+| 实验设置 §Throughput and deadline：DEV 有最终答案 | A 16/16、B 15/16 | `runs/dev_full_v5/stats.md` → `DEV/{A,B}/*/episode.json` 的 `final_answer` |
+| 同上：离线正确率（DEV，仅本批） | A 10/16、B 13/16（总 23/32） | `runs/dev_full_v5/scored.jsonl`（`scripts/score.py` + `references/offline_reference_v1.json`） |
+| 同上：中位耗时 / 最大耗时 | 30.0 s / 27.1 s、最大 122.2 s | `runs/dev_full_v5/stats.md`、各 `episode.json` 的 `wall_seconds` |
 | 同上：截止时间证据 | `deadline_exceeded`=0，最大落盘延迟 0.016 s | 各 `episode.json` 的 `generation_stopped_at` / `episode_written_at` / `post_generation_seconds` |
-| 同上：唯一无答案 | B `web_browsing/price_of_legendary_potion`，`no_answer_after_turns_exhausted` | `runs/dev_full_v4/DEV/B/.../episode.json` |
-| 工具预算：执行/拦截 | 254 次执行、17 次拦截，每轮执行 ≤4、每任务 ≤32 | `scripts/check_budget_accounting.py --runs runs/dev_full_v4/DEV` |
+| 同上：唯一无答案 | B `web_browsing/price_of_legendary_potion`，`no_answer_after_turns_exhausted` | `runs/dev_full_v5/DEV/B/.../episode.json` |
+| 工具预算：执行/拦截 | 254 次执行、1 次拦截，每轮执行 ≤4、每任务 ≤32 | `scripts/check_budget_accounting.py --runs runs/dev_full_v5/DEV` |
 | 解码速度 | 23.6–25.2 tok/s | 作业 14061564 的 `logs/run-14061564.out`（`scripts/env/bench_speed.py`） |
 | 首轮 86 条（仅诊断） | DEV-A 15/16、DEV-B 14/16、EVAL-A 23/27、EVAL-B 25/27 | `runs/dev_baselines/`、`runs/eval_baselines/`、`docs/failure_taxonomy.md` |
 

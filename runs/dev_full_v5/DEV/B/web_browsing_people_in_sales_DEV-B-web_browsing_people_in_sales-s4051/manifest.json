@@ -1,0 +1,50 @@
+{
+  "schema_version": "1",
+  "started_at": "2026-11-26T04:13:58+0800",
+  "run_id": "DEV-B-web_browsing_people_in_sales-s4051",
+  "split": "DEV",
+  "condition": "B",
+  "seed": 4051,
+  "task_id": "web_browsing/people_in_sales",
+  "tasks": [
+    "web_browsing/people_in_sales"
+  ],
+  "model": {
+    "repository": "Qwen/Qwen3.5-4B",
+    "revision": "851bf6e806efd8d0a36b00ddf55e13ccb7b8cd0a",
+    "dtype": "bfloat16",
+    "enable_thinking": false,
+    "seed": 4051,
+    "eos_token_ids": [
+      248044,
+      248046
+    ]
+  },
+  "backend": "transformers",
+  "upstream_commit": "d607f56c9cfe9e8632ebaf65dcaf2b4b7fe1c6f8",
+  "team_commit": "de5b03770b093f1654589b48f17f56d35c0d4ee3",
+  "course_hashes": {
+    "Assignment_Attachment.txt": "9747d38f42a702e4e6d2301478ed24f3956de0557bddc408927704c6f60396a7",
+    "runtime_settings.json": "faa79929e12987fd301e07cb81d61e4b6ac4b87d4afce32de9b71229997dfdd1",
+    "split_manifest.json": "ed7e35aad947c7b64d6748ffac7343f7bd833e794f8fbc402dd54a55c555cbfe",
+    "_declared": {
+      "Assignment_Attachment.txt": "9747d38f42a702e4e6d2301478ed24f3956de0557bddc408927704c6f60396a7",
+      "runtime_settings.json": "faa79929e12987fd301e07cb81d61e4b6ac4b87d4afce32de9b71229997dfdd1",
+      "split_manifest.json": "ed7e35aad947c7b64d6748ffac7343f7bd833e794f8fbc402dd54a55c555cbfe"
+    },
+    "_mismatched": {}
+  },
+  "limits": {
+    "interaction_turns": 12,
+    "tokens_per_interaction": 384,
+    "final_answer_tokens": 128,
+    "total_generated_tokens": 3072,
+    "context_tokens": 16384,
+    "tool_attempts_per_action": 4,
+    "tool_attempts_per_task": 32,
+    "task_seconds": 180.0,
+    "action_seconds": 15.0,
+    "feedback_characters": 2000
+  },
+  "stop_text": "End Action"
+}
