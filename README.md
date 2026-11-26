@@ -14,7 +14,7 @@ AIAA 4051 Project 14 — Execution Feedback and Interaction Efficiency in CodeAc
 |---|---|---|
 | A 平台与基线 | SibeiLYU | [#1](https://github.com/mili5114/NLP_project/issues/1) |
 | B 方法与冻结 | 待认领 | — |
-| C 评测与展示 | 待认领 | — |
+| C 评测与展示 | 郑启丹 (mili5114) | [PR #3](https://github.com/mili5114/NLP_project/pull/3) |
 
 ## 快速开始（集群）
 
