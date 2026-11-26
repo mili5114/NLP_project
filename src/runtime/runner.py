@@ -10,6 +10,7 @@
 
 from __future__ import annotations
 
+import json
 import subprocess
 import time
 from pathlib import Path
@@ -18,7 +19,7 @@ from typing import Any
 from ..feedback.dispatcher import build_feedback
 from ..records.writer import EpisodeWriter
 from .budget import Budget
-from .config import CourseConfig, repo_root, safe_slug
+from .config import CourseConfig, repo_root, safe_slug, sha256_text
 from .observer import ToolObserver
 from .repl import BlockExecutor
 from .tasks import action_mode, get_task
@@ -66,6 +67,34 @@ def feedback_settings(cfg: CourseConfig) -> dict[str, Any]:
     }
 
 
+def _feedback_config(
+    cfg: CourseConfig, condition: str, method_config: dict[str, Any] | None
+) -> tuple[dict[str, Any], dict[str, Any]]:
+    settings = feedback_settings(cfg)
+    course_sha = cfg.hashes.get("runtime_settings.json")
+    if condition in {"A", "B"}:
+        if method_config is not None:
+            raise ValueError("Method configuration applies to conditions C and D")
+        return settings, {"config_sha256": course_sha}
+
+    if condition not in {"C", "D"}:
+        raise ValueError(f"Unknown condition: {condition}")
+    if not isinstance(method_config, dict) or method_config.keys() != {"min_match_chars"}:
+        raise ValueError("C/D require a method configuration containing only min_match_chars")
+    threshold = method_config["min_match_chars"]
+    if type(threshold) is not int or threshold < 1:
+        raise ValueError("min_match_chars must be a positive integer")
+
+    settings["min_match_chars"] = threshold
+    provenance = {
+        "condition": condition,
+        "course_runtime_sha256": course_sha,
+        "method_config": {"min_match_chars": threshold},
+    }
+    config_sha = sha256_text(json.dumps(provenance, sort_keys=True, separators=(",", ":")))
+    return settings, {"config_sha256": config_sha, "method_config": provenance["method_config"]}
+
+
 def run_episode(
     *,
     task_id: str,
@@ -76,15 +105,15 @@ def run_episode(
     split: str = "DEV",
     seed: int | None = None,
     run_id: str | None = None,
+    method_config: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     condition = condition.upper()
+    settings, feedback_config = _feedback_config(cfg, condition, method_config)
     limits = cfg.limits
     seed = int(seed if seed is not None else cfg.model["seed"])
     run_id = run_id or f"{split}-{condition}-{safe_slug(task_id)}-s{seed}"
 
     task = get_task(task_id)
-    settings = feedback_settings(cfg)
-
     messages: list[dict[str, str]] = [
         {"role": "system", "content": build_system_prompt(task, cfg)}
     ]
@@ -125,6 +154,7 @@ def run_episode(
         "upstream_commit": cfg.code_commit,
         "team_commit": _git_head(),
         "course_hashes": cfg.hashes,
+        **feedback_config,
         "limits": {
             "interaction_turns": limits.interaction_turns,
             "tokens_per_interaction": limits.tokens_per_interaction,
@@ -416,7 +446,7 @@ def run_episode(
         "model_calls": model_calls,
         "tool_attempts_executed": observer.executed,
         "tool_attempts_blocked": observer.blocked,
-        "config_sha256": cfg.hashes.get("runtime_settings.json"),
+        **feedback_config,
         # C 的审计要求每份正式记录自带版本三元组，不只靠 manifest：
         # 代码提交与模型 revision 逐条核对，缺任一项即 FAIL。
         "code_commit": _git_head(),
@@ -469,10 +499,12 @@ def _record_platform_error(
     run_id: str,
     exc: BaseException,
     cfg: CourseConfig,
+    method_config: dict[str, Any] | None,
 ) -> Path:
     """单题平台异常也要落一条 episode，否则 C 汇总时数量对不上且看不出原因。"""
     from ..records.writer import EpisodeWriter
 
+    _, feedback_config = _feedback_config(cfg, condition, method_config)
     writer = EpisodeWriter(
         Path(runs_root),
         run_id=run_id,
@@ -489,6 +521,7 @@ def _record_platform_error(
             "upstream_commit": cfg.code_commit,
             "team_commit": _git_head(),
             "course_hashes": cfg.hashes,
+            **feedback_config,
             "aborted": True,
         },
     )
@@ -508,7 +541,9 @@ def _record_platform_error(
             "model_calls": 0,
             "tool_attempts_executed": 0,
             "tool_attempts_blocked": 0,
-            "config_sha256": cfg.hashes.get("runtime_settings.json"),
+            **feedback_config,
+            "code_commit": _git_head(),
+            "model_revision": cfg.model["revision"],
             "error": f"{type(exc).__name__}: {exc}",
         }
     )
@@ -516,7 +551,6 @@ def _record_platform_error(
 
 def main(argv: list[str] | None = None) -> int:
     import argparse
-    import json
     import os
 
     from .backend import TransformersBackend
@@ -525,13 +559,22 @@ def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description="跑一个 condition 下的若干 episode")
     ap.add_argument("--task", action="append", help="task_id，可重复；不给则按 --split 取全部")
     ap.add_argument("--split", default="DEV")
-    ap.add_argument("--condition", default="A")
+    ap.add_argument("--condition", type=str.upper, choices=("A", "B", "C", "D"), default="A")
+    ap.add_argument("--method-config", type=Path, help="C/D method configuration JSON file")
     ap.add_argument("--model-dir", default=os.environ.get("MODEL_DIR", os.path.expanduser("~/models/Qwen3.5-4B")))
     ap.add_argument("--runs-root", default="runs/dev_baselines")
     ap.add_argument("--limit", type=int, default=0, help="只跑前 N 个任务（pilot 用）")
     args = ap.parse_args(argv)
 
     cfg = load_course_config()
+    try:
+        method_config = (
+            json.loads(args.method_config.read_text(encoding="utf-8"))
+            if args.method_config is not None else None
+        )
+        _feedback_config(cfg, args.condition, method_config)
+    except (OSError, ValueError) as exc:
+        ap.error(str(exc))
     tasks = args.task or cfg.task_ids(args.split)
     if args.limit:
         tasks = tasks[: args.limit]
@@ -557,6 +600,7 @@ def main(argv: list[str] | None = None) -> int:
                 runs_root=args.runs_root,
                 split=args.split,
                 run_id=run_id,
+                method_config=method_config,
             )
         except BaseException as exc:  # noqa: BLE001 - 单题失败不能停掉整批
             failures += 1
@@ -571,6 +615,7 @@ def main(argv: list[str] | None = None) -> int:
                 run_id=run_id,
                 exc=exc,
                 cfg=cfg,
+                method_config=method_config,
             )
             print(f"    !! platform_error -> {path}", flush=True)
             continue

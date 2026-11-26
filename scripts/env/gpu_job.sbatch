@@ -45,10 +45,16 @@ if [ -n "${TASKS:-}" ]; then
     for t in ${TASKS//,/ }; do TASK_ARGS+=(--task "$t"); done
 fi
 
+METHOD_ARGS=()
+if [ -n "${METHOD_CONFIG:-}" ]; then
+    METHOD_ARGS+=(--method-config "$METHOD_CONFIG")
+fi
+
 python -m src.runtime.runner \
     --split "${SPLIT:-DEV}" \
     --condition "$COND" \
     --model-dir "$MODEL_DIR" \
     --runs-root "${RUNS_ROOT:-runs/dev_baselines}" \
     --limit "${LIMIT:-0}" \
-    "${TASK_ARGS[@]}"
+    "${TASK_ARGS[@]}" \
+    "${METHOD_ARGS[@]}"
