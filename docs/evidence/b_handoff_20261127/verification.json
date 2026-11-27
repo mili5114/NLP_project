@@ -1,0 +1,52 @@
+{
+  "reviewed_branch": "origin/b/feedback-method",
+  "reviewed_commit": "a02fdd9bd122238ad925e93c03135d3eaf9c26ba",
+  "suite_tests": 145,
+  "suite_failures": 0,
+  "suite_errors": 0,
+  "six_cpu_smokes": [
+    {
+      "condition": "C",
+      "threshold": 12,
+      "config_sha256": "f3baf1498a5cfa8436bfe8a05eaa6f3e775206b9130b39f9ef06f2b7abef65ae",
+      "audit_issues": [],
+      "max_feedback_chars": 42
+    },
+    {
+      "condition": "D",
+      "threshold": 12,
+      "config_sha256": "266a8fe7cec9fed5ad16565d6376382b7522d639ab826f3cd2a28a57bcb0db57",
+      "audit_issues": [],
+      "max_feedback_chars": 194
+    },
+    {
+      "condition": "C",
+      "threshold": 24,
+      "config_sha256": "7470c6a736f75bd7034ab70dfdfed107f40d48c16535c98a4f717153f7cdc052",
+      "audit_issues": [],
+      "max_feedback_chars": 42
+    },
+    {
+      "condition": "D",
+      "threshold": 24,
+      "config_sha256": "13aaeadd1c5ab0af54e76a954ee888a6c1601747cc2443e5bc6c1b11082e1f54",
+      "audit_issues": [],
+      "max_feedback_chars": 194
+    },
+    {
+      "condition": "C",
+      "threshold": 48,
+      "config_sha256": "417f86d458f81c2171597d22f3fc6402de51d1ebf9755dabd15d10415919a319",
+      "audit_issues": [],
+      "max_feedback_chars": 194
+    },
+    {
+      "condition": "D",
+      "threshold": 48,
+      "config_sha256": "5ec548945e3bb8a700ffbd3f8a15bcfc95a9fa447ead94df5ca9230eede40524",
+      "audit_issues": [],
+      "max_feedback_chars": 194
+    }
+  ],
+  "scope": "B modules loaded from git objects into C checkout; CPU only, no GPU or DEV inference"
+}

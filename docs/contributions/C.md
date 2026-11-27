@@ -111,3 +111,7 @@ python scripts/plot_results.py --summary results/synthetic/summary.json \
 ## 2026-11-26：DEV v5 独立数据验收
 
 独立重跑正式记录审计、离线评分、绑定汇总、结构/预算/配置检查及 138 项 CPU 测试；核验真实工具预算转换和最终轮禁工具。保存公开审计证据、汇总表、验证回执，生成本地图表，撰写 C_DEV_V5_REVIEW_20261126.md，明确 DEV 与正式 EVAL、真实覆盖与 CPU 证据边界。未执行 GPU / EVAL。
+
+## 2026-11-27：B 方法初步交接核验
+
+独立检查 PR #4 a02fdd9，隔离运行 B 方法/runner 与 C 测试共 145 项通过，补 6 个候选 × 条件 CPU 接入样例并经 C adapter / 工具审计，回放 v5 的 219 条反馈生成候选触发与可见变化统计。撰写 C_B_METHOD_REVIEW_20261127.md，保留验证脚本与回执。未改 B 实现，未替 B 选阈值，未运行 GPU/EVAL。

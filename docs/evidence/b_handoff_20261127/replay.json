@@ -1,0 +1,32 @@
+{
+  "scope": "Offline replay of A/B DEV v5 trajectories only; not C/D on-policy results and not candidate selection",
+  "rows": [
+    {
+      "min_match_chars": 12,
+      "replayed_feedbacks": 219,
+      "triggered_feedbacks": 39,
+      "changed_visible_feedbacks": 39,
+      "omitted_events": 39,
+      "C_total_chars": 90331,
+      "D_total_chars": 98613
+    },
+    {
+      "min_match_chars": 24,
+      "replayed_feedbacks": 219,
+      "triggered_feedbacks": 23,
+      "changed_visible_feedbacks": 23,
+      "omitted_events": 23,
+      "C_total_chars": 92414,
+      "D_total_chars": 98613
+    },
+    {
+      "min_match_chars": 48,
+      "replayed_feedbacks": 219,
+      "triggered_feedbacks": 23,
+      "changed_visible_feedbacks": 23,
+      "omitted_events": 23,
+      "C_total_chars": 92414,
+      "D_total_chars": 98613
+    }
+  ]
+}
