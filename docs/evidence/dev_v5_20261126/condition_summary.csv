@@ -1,0 +1,3 @@
+condition,N_expected,N_recorded,N_scored,missing_slots,success_count,success_rate,mean_input_tokens,mean_output_tokens,mean_model_calls,mean_wall_seconds,n_with_usage,n_with_output_usage,status,banner
+A,16,16,16,0,10,0.625,12770.9375,922.4375,8.5625,38.0998,16,16,COMPLETE,
+B,16,16,16,0,13,0.8125,12135.75,805.4375,7.125,33.7947,16,16,COMPLETE,

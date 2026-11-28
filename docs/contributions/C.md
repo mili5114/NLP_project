@@ -77,3 +77,41 @@ python scripts/plot_results.py --summary results/synthetic/summary.json \
 ## 5. 本轮边界
 
 所有 `results/synthetic/` 下的表格与图都是合成演示，**不是实验结果**。正式 EVAL 尚缺 A 的平台/真实日志/参考导出与 B 的冻结包，详见 `docs/C_eval_readiness.md`。本轮未开展真实推理、未修改方法、未编造结果。
+
+## 6. 2026-11-23：真实 DEV 对接
+
+- 已同步 main 38198ea，新增 runtime_adapter.py 和 prepare_runtime_records.py，仅对派生副本做字段映射与结构核验。
+- 32 条真实 DEV A/B 已读取；排除登记的旧 pilot；验证唯一槽位、逐轮 tokens/调用数与首个答案出口。原始文件未修改。
+- 新增 9 个适配/输入保护测试，连同原 C 的56项共65项通过。
+- 检出课程要求的提示签名尚未修正及两个预留最终轮出口待确认问题；详见 docs/C_REAL_LOG_REVIEW_20261123.md。未把结构检查当正式审计 PASS，未评分正确率，未读取 EVAL 轨迹，未运行模型。
+- A 已有真实平台/日志；当前待交接重点变为修复后的协议一致数据和私有 reference 导出，B 的冻结包仍待交付。此前“没有真实日志”的状态已过时。
+
+## 7. 2026-11-24：blocked 审计修正与 A 修复复查
+
+已同步 A 的 beacbfc，确认提示签名与预留最终轮代码修复，但尚无对应新日志。新增 tool_audit.py，按顺序验证实际执行与 blocked，修正把超额 blocked 本身判为违规的误报，接入 audit.py/preparation 并核验 episode 计数。C 的76项测试通过。旧32条 DEV 的282次尝试=276执行+6 blocked，计数一致；只作旧数据诊断，不是正式认证。详见 docs/C_FOLLOWUP_20261124.md。
+
+## 8. 2026-11-24：4条新样例验收
+
+同步816fb14；新增显式DEV子集核验与任务wall超限提示，79项C测试通过。4条新样例结构一致，旅行A/B验证三参数find_flights。两条预算任务转为约237/255秒task_timeout，未到最终轮验证点；发现manifest团队SHA暂不可从GitHub解析。证据和交接见 docs/C_FIX_SAMPLE_REVIEW_20261124.md。未运行GPU、未修改A模块、未评分正确性。
+
+
+## 2026-11-25：DEV v4 独立验收
+
+详见 [C DEV v4 验收](../C_DEV_V4_REVIEW_20261125.md)。32/32 结构及评分复现通过，但 1 槽位工具预算耗尽后继续交互；新增转换审计与 6 项回归，当前 132 tests 通过。v4 结论为 INCOMPLETE，仅作诊断，等待 A 修复运行时、B 对齐协议后冻结。参考原文留本机，未跑新 GPU/EVAL。
+
+
+## 2026-11-25：正式实验与展示准备
+
+新增 C_EVAL_EXECUTION 执行/验收手册、结果章节骨架、C_POSTER_DEMO_PLAN 内容底稿、C_CODE_WALKTHROUGH 代码讲解材料。核对已有 CLI 与课程设置，保留 C/D 尚未接入、配置 hash 口径和 TA 展示形式待确认的边界。不启动 GPU/EVAL，不用 DEV 诊断结果填最终结果。
+
+## 2026-11-25：A 工具预算修复独立验收
+
+复核 de5b037，新增 tests/test_tool_budget_handoff.py 两项 C 集成测试（32 attempts = 4 executed + 28 blocked；final-only Action 不执行），并用 C adapter/auditor交叉检查。全套 138 项 CPU 测试通过，撰写 C_TOOL_BUDGET_FIX_REVIEW_20261125.md，放行新版 DEV，明确旧数据结论和 GPU 证据边界。
+
+## 2026-11-26：DEV v5 独立数据验收
+
+独立重跑正式记录审计、离线评分、绑定汇总、结构/预算/配置检查及 138 项 CPU 测试；核验真实工具预算转换和最终轮禁工具。保存公开审计证据、汇总表、验证回执，生成本地图表，撰写 C_DEV_V5_REVIEW_20261126.md，明确 DEV 与正式 EVAL、真实覆盖与 CPU 证据边界。未执行 GPU / EVAL。
+
+## 2026-11-27：B 方法初步交接核验
+
+独立检查 PR #4 a02fdd9，隔离运行 B 方法/runner 与 C 测试共 145 项通过，补 6 个候选 × 条件 CPU 接入样例并经 C adapter / 工具审计，回放 v5 的 219 条反馈生成候选触发与可见变化统计。撰写 C_B_METHOD_REVIEW_20261127.md，保留验证脚本与回执。未改 B 实现，未替 B 选阈值，未运行 GPU/EVAL。

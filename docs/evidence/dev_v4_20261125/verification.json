@@ -1,0 +1,24 @@
+{
+  "reference_content_sha256": "683697256d7431d3253aacd58850ed0209d244cef460099714685f242b3118e4",
+  "reference_entries_verified": 43,
+  "scored_verdict_matches": 32,
+  "episode_count": 32,
+  "termination_counts": {
+    "answer": 22,
+    "final_answer_after_turns_exhausted": 7,
+    "final_answer_after_tokens_exhausted": 2,
+    "no_answer_after_turns_exhausted": 1
+  },
+  "final_only_calls": 10,
+  "final_only_max_output_tokens": 128,
+  "final_only_tool_events": 0,
+  "signature_call_status_counts": {
+    "reverse_string:ok": 12,
+    "find_flights:ok": 40,
+    "find_flights:blocked": 8
+  },
+  "deadline_truncations": 0,
+  "max_wall_seconds": 122.733,
+  "max_generation_stopped_task_seconds": 122.734,
+  "max_post_generation_seconds": 0.016
+}
